@@ -14,7 +14,9 @@ impl MessageReceiver {
     println ! ("Cliente conectado");
     let mut reader = BufReader::new(stream.unwrap());
     thread::spawn( move | | {
-    loop {
+
+        //Aca deberiamos pasarle la funcion por parametro.
+        loop {
     let mut buffer = String::new();
     reader.read_line( & mut buffer);
     if buffer.len() > 0 {
