@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use std::thread;
 use crate::connections::constants::IP;
 
-fn main() {
+fn start_receiver() {
     let listener = TcpListener::bind(IP).unwrap();
 
     for stream in listener.incoming() {
