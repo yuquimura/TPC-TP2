@@ -1,11 +1,11 @@
 use crate::clients::common_client::CommonCLient;
 use crate::connections::message_receiver::MessageReceiver;
 
-pub struct BankCLient{
+pub struct BankClient{
     message_receiver: MessageReceiver,
 }
 
-impl CommonCLient for BankCLient{
+impl CommonCLient for BankClient{
     fn answer_message() {
         todo!()
     }

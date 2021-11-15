@@ -1,11 +1,11 @@
 use crate::clients::common_client::CommonCLient;
 use crate::connections::message_receiver::MessageReceiver;
 
-pub struct HotelCLient{
+pub struct HotelClient{
     message_receiver: MessageReceiver,
 }
 
-impl CommonCLient for HotelCLient{
+impl CommonCLient for HotelClient{
     fn answer_message() {
         todo!()
     }
