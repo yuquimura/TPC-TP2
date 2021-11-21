@@ -1,2 +1,2 @@
-pub mod message_receiver;
 mod constants;
+pub mod message_receiver;
