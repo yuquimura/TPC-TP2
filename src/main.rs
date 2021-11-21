@@ -1,4 +1,4 @@
-mod clients;
+mod services;
 mod connections;
 
 fn main() {
