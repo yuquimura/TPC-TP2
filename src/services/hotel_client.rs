@@ -1,4 +1,4 @@
-use crate::clients::common_client::CommonClient;
+use crate::services::common_client::CommonClient;
 use crate::connections::message_receiver::MessageReceiver;
 
 pub struct HotelClient {

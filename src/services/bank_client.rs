@@ -1,12 +1,12 @@
-use crate::clients::common_client::CommonClient;
+use crate::services::common_client::CommonClient;
 use crate::connections::message_receiver::MessageReceiver;
 
-pub struct AirlineClient {
+pub struct BankClient {
     #[allow(dead_code)]
     message_receiver: MessageReceiver,
 }
 
-impl CommonClient for AirlineClient {
+impl CommonClient for BankClient {
     fn answer_message() {
         todo!()
     }
