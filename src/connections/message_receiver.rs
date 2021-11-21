@@ -19,12 +19,11 @@ impl MessageReceiver {
                 loop {
                     let mut buffer = String::new();
                     reader.read_line(&mut buffer).unwrap(); // TODO: Manage this
-                    if !buffer.is_empty() {
-                        println!("Hello {}", buffer);
-                    } else {
+                    if buffer.is_empty() {
                         println!("Goodbye!");
                         break;
                     }
+                    println!("Hello {}", buffer);
                 }
             });
         }
