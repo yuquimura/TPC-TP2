@@ -2,32 +2,32 @@ use std::{net::UdpSocket, time::Duration};
 
 use super::{socket_error::SocketError, udp_socket_trait::UdpSocketTrait};
 
-const UDP_PACKET_SIZE:usize = 512;
+const UDP_PACKET_SIZE: usize = 512;
 
 #[allow(dead_code)]
 pub struct UdpSocketWrap {
-    socket: UdpSocket
+    socket: UdpSocket,
 }
 
 impl UdpSocketWrap {
     #[must_use]
     pub fn new(opt_timeout: Option<Duration>) -> Self {
-        let socket = UdpSocket::bind("0.0.0.0:0")
-                                .expect("[UdpSocketWrap] Bind ha fallado");
-        socket.set_read_timeout(opt_timeout)
-                .expect("[UdpSocketWrap] Set timeout ha fallado");
-        UdpSocketWrap{
-            socket
-        }
+        let socket = UdpSocket::bind("0.0.0.0:0").expect("[UdpSocketWrap] Bind ha fallado");
+        socket
+            .set_read_timeout(opt_timeout)
+            .expect("[UdpSocketWrap] Set timeout ha fallado");
+        UdpSocketWrap { socket }
     }
 }
 
 impl UdpSocketTrait for UdpSocketWrap {
     fn send_to(&mut self, buf: &[u8], addr: &str) -> Result<(), SocketError> {
-        let mut total_bytes_sent= 0;
+        let mut total_bytes_sent = 0;
         while total_bytes_sent < buf.len() {
-            let bytes_sent = self.socket.send_to(&buf[total_bytes_sent..], addr)
-                                                .expect("[UdpSocketWrap] Version de direccion IP incorrecta");
+            let bytes_sent = self
+                .socket
+                .send_to(&buf[total_bytes_sent..], addr)
+                .expect("[UdpSocketWrap] Version de direccion IP incorrecta");
             if bytes_sent == 0 {
                 return Err(SocketError::ZeroBytes);
             }
@@ -43,7 +43,7 @@ impl UdpSocketTrait for UdpSocketWrap {
             let res = self.socket.recv_from(&mut buf[total_bytes_recv..]);
             let (bytes_recv, _) = match res {
                 Ok(value) => value,
-                Err(_) => return Err(SocketError::Timeout)
+                Err(_) => return Err(SocketError::Timeout),
             };
 
             if bytes_recv == 0 {
@@ -108,7 +108,7 @@ mod tests {
         let res = client.recv(1);
         match res {
             Ok(_) => assert!(false),
-            Err(err) => assert_eq!(err, SocketError::Timeout)
+            Err(err) => assert_eq!(err, SocketError::Timeout),
         };
     }
 }

@@ -1,15 +1,17 @@
 #[allow(dead_code)]
 pub struct Client {
-    addr: String
+    addr: String,
 }
 
 impl Client {
+    #[must_use]
     pub fn new(addr: &str) -> Self {
-        Client { 
-            addr: addr.to_string()
+        Client {
+            addr: addr.to_string(),
         }
     }
 
+    #[must_use]
     pub fn get_addr(&self) -> String {
         self.addr.clone()
     }

@@ -1,5 +1,5 @@
-use crate::services::common_client::CommonClient;
 use crate::connections::message_receiver::MessageReceiver;
+use crate::services::common_client::CommonClient;
 
 pub struct HotelClient {
     #[allow(dead_code)]
