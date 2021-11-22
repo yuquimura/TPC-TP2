@@ -1,5 +1,6 @@
 use std::net::UdpSocket;
-use crate::clients::client::Client;
+
+use super::{client::Client, client_error::ClientError};
 
 const UDP_PACKET_SIZE:usize = 512;
 
@@ -28,7 +29,7 @@ impl UDPClient {
 }
 
 impl Client for UDPClient {
-    fn send(&mut self, vec_bytes: Vec::<u8>) -> Result<(), String> {
+    fn send(&mut self, vec_bytes: Vec::<u8>) -> Result<(), ClientError> {
         if vec_bytes.len() == 0 {
             return Ok(());
         }
@@ -39,21 +40,21 @@ impl Client for UDPClient {
             let bytes_sent = self.socket.send_to(&buf[total_bytes_sent..], address_port)
                                                 .expect("[UDPclient] Wrong IP address version");
             if bytes_sent == 0 {
-                return Err("[UDPClient] Zero bytes sent".to_string());
+                return Err(ClientError::ZeroBytes);
             }
             total_bytes_sent += bytes_sent;
         }
         Ok(())
     }
 
-    fn recv(&mut self, n_bytes: usize) -> Result<Vec::<u8>, String> {
+    fn recv(&mut self, n_bytes: usize) -> Result<Vec::<u8>, ClientError> {
         let mut res:Vec<u8> = vec![];
         let mut buf = [0; UDP_PACKET_SIZE];
         while res.len() < n_bytes {
             let (bytes_recv, _) = self.socket.recv_from(&mut buf)
                                                                 .expect("[UDP Client] Recv should not fail");
             if bytes_recv == 0 {
-                return Err("[UDPClient] Could not receive all bytes".to_string());
+                return Err(ClientError::ZeroBytes);
             }
             res.append(&mut buf[..bytes_recv].to_vec());
         }
