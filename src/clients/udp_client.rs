@@ -1,6 +1,8 @@
 use std::net::UdpSocket;
 use crate::clients::client::Client;
 
+const UDP_PACKET_SIZE:usize = 512;
+
 #[allow(dead_code)]
 pub struct UDPClient {
     address: String, 
@@ -26,26 +28,36 @@ impl UDPClient {
 }
 
 impl Client for UDPClient {
-    fn send(&mut self, message: &str) -> Result<(), String> {
-        if message.len() == 0 {
+    fn send(&mut self, vec_bytes: Vec::<u8>) -> Result<(), String> {
+        if vec_bytes.len() == 0 {
             return Ok(());
         }
-        let buf = message.as_bytes();
-        let address_port = self.address_port();
-
-        let mut bytes_sent= 0;
-        let msg_bytes_len = message.as_bytes().len();
-        
-        while bytes_sent < msg_bytes_len {
-            let last_bytes_sent = self.socket.send_to(&buf[bytes_sent..], address_port.clone())
+        let mut total_bytes_sent= 0;
+        let buf = &vec_bytes[..];
+        while total_bytes_sent < buf.len() {
+            let address_port = self.address_port();
+            let bytes_sent = self.socket.send_to(&buf[total_bytes_sent..], address_port)
                                                 .expect("[UDPclient] Wrong IP address version");
-            if last_bytes_sent == 0 {
+            if bytes_sent == 0 {
                 return Err("[UDPClient] Zero bytes sent".to_string());
             }
-            bytes_sent += last_bytes_sent;
+            total_bytes_sent += bytes_sent;
         }
-        println!("bytes sent: {}", bytes_sent);
         Ok(())
+    }
+
+    fn recv(&mut self, n_bytes: usize) -> Result<Vec::<u8>, String> {
+        let mut res:Vec<u8> = vec![];
+        let mut buf = [0; UDP_PACKET_SIZE];
+        while res.len() < n_bytes {
+            let (bytes_recv, _) = self.socket.recv_from(&mut buf)
+                                                                .expect("[UDP Client] Recv should not fail");
+            if bytes_recv == 0 {
+                return Err("[UDPClient] Could not receive all bytes".to_string());
+            }
+            res.append(&mut buf[..bytes_recv].to_vec());
+        }
+        Ok(res)
     }
 }
 
@@ -74,14 +86,35 @@ mod tests {
         let message = "a message";
         const MSG_LEN: usize = 9; // Necesito que se resuelva en tiempo de compilación
         assert_eq!(MSG_LEN, message.len());
+        let mut buf = [0; MSG_LEN];
 
-        let res = client.send(message);
-
+        let res = client.send(message.as_bytes().to_vec());
         assert!(res.is_ok());
 
-        let mut buf = [0; MSG_LEN];
         let (_, _) = socket.recv_from(&mut buf).unwrap();
-
         assert_eq!(std::str::from_utf8(&buf).unwrap(), message);
+    }
+
+    #[test]
+    fn it_should_recv_a_message() {
+        let address = "127.0.0.1";
+        let port = "49153"; // Test en paralelo => Usar un puerto distinto
+        let address_port = format!("{}:{}", address, port);
+        let socket = UdpSocket::bind(address_port).unwrap();
+        let mut client = UDPClient::new(address, port);
+
+        let message = "a message";
+        const MSG_LEN: usize = 9; // Debe resolverse en tiempo de compilación
+        assert_eq!(MSG_LEN, message.len());
+        let mut buf = [0; MSG_LEN];
+
+        client.send(message.as_bytes().to_vec()).unwrap();
+        let (_, client_addr) = socket.recv_from(&mut buf).unwrap();
+        socket.send_to(&buf, client_addr).unwrap();
+
+        let res = client.recv(MSG_LEN);
+
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), message.as_bytes());
     }
 }
