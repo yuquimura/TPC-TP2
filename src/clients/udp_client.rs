@@ -1,4 +1,4 @@
-use std::net::UdpSocket;
+use std::{net::UdpSocket, time::Duration};
 
 use super::{client::Client, client_error::ClientError};
 
@@ -13,9 +13,11 @@ pub struct UDPClient {
 
 impl UDPClient {
     #[must_use]
-    pub fn new(address: &str, port: &str) -> Self {
+    pub fn new(address: &str, port: &str, opt_timeout: Option<Duration>) -> Self {
         let socket = UdpSocket::bind("0.0.0.0:0")
-                                .expect("[UDPClient] Unable to bind socket");
+                                .expect("[UDPClient] Bind ha fallado");
+        socket.set_read_timeout(opt_timeout)
+                .expect("[UDPClient] Set timeout ha fallado");
         UDPClient{
             address: address.to_string(),
             port: port.to_string(),
@@ -38,7 +40,7 @@ impl Client for UDPClient {
         while total_bytes_sent < buf.len() {
             let address_port = self.address_port();
             let bytes_sent = self.socket.send_to(&buf[total_bytes_sent..], address_port)
-                                                .expect("[UDPclient] Wrong IP address version");
+                                                .expect("[UDPclient] Version de direccion IP incorrecta");
             if bytes_sent == 0 {
                 return Err(ClientError::ZeroBytes);
             }
@@ -51,8 +53,13 @@ impl Client for UDPClient {
         let mut res:Vec<u8> = vec![];
         let mut buf = [0; UDP_PACKET_SIZE];
         while res.len() < n_bytes {
-            let (bytes_recv, _) = self.socket.recv_from(&mut buf)
-                                                                .expect("[UDP Client] Recv should not fail");
+            let recv_res = self.socket.recv_from(&mut buf);
+            let (bytes_recv, _) = match recv_res {
+                Ok(value) => value,
+                Err(_) => return Err(ClientError::Timeout)
+            };
+
+            //.expect("[UDP Client] Recv no deberia fallar");
             if bytes_recv == 0 {
                 return Err(ClientError::ZeroBytes);
             }
@@ -64,13 +71,16 @@ impl Client for UDPClient {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
+    use ntest::timeout;
 
     #[test]
     fn it_should_have_an_address_and_a_port() {
         let address = "127.0.0.1";
         let port = "49152";
-        let client = UDPClient::new(address, port);
+        let client = UDPClient::new(address, port, None);
 
         assert_eq!(client.address, address);
         assert_eq!(client.port, port);
@@ -79,10 +89,10 @@ mod tests {
     #[test]
     fn it_should_send_a_message() {
         let address = "127.0.0.1";
-        let port = "49152";
+        let port = "49153";
         let address_port = format!("{}:{}", address, port);
         let socket = UdpSocket::bind(address_port).unwrap();
-        let mut client = UDPClient::new(address, port);
+        let mut client = UDPClient::new(address, port, None);
 
         let message = "a message";
         const MSG_LEN: usize = 9; // Necesito que se resuelva en tiempo de compilación
@@ -99,10 +109,10 @@ mod tests {
     #[test]
     fn it_should_recv_a_message() {
         let address = "127.0.0.1";
-        let port = "49153"; // Test en paralelo => Usar un puerto distinto
+        let port = "49154"; // Test en paralelo => Usar un puerto distinto
         let address_port = format!("{}:{}", address, port);
         let socket = UdpSocket::bind(address_port).unwrap();
-        let mut client = UDPClient::new(address, port);
+        let mut client = UDPClient::new(address, port, None);
 
         let message = "a message";
         const MSG_LEN: usize = 9; // Debe resolverse en tiempo de compilación
@@ -117,5 +127,19 @@ mod tests {
 
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), message.as_bytes());
+    }
+
+    #[test]
+    #[timeout(5000)]
+    fn it_should_return_timeout_error_on_recv_timeout() {
+        let address = "127.0.0.1";
+        let port = "49155"; // Test en paralelo => Usar un puerto distinto
+        let some_timeout = Some(Duration::from_millis(1));
+        let mut client = UDPClient::new(address, port, some_timeout);
+        let res = client.recv(1);
+        match res {
+            Ok(_) => assert!(false),
+            Err(err) => assert_eq!(err, ClientError::Timeout)
+        };
     }
 }

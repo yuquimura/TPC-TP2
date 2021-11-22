@@ -3,7 +3,7 @@ use std::fmt;
 #[allow(dead_code)]
 type Result<T> = std::result::Result<T, ClientError>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ClientError {
     ZeroBytes,
     Timeout 
