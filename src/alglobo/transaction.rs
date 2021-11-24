@@ -38,16 +38,16 @@ impl Transaction {
 
 #[cfg(test)]
 mod tests {
-    use crate::clients::client_name::ClientName;
+    use crate::services::service_name::ServiceName;
 
     use super::*;
     use std::collections::HashMap;
 
     #[test]
     fn waiting_clients_should_return_waiting_clients_name_and_fee() {
-        let airline = (ClientName::airline(), 100.0);
-        let bank = (ClientName::bank(), 300.0);
-        let hotel = (ClientName::hotel(), 200.0);
+        let airline = (ServiceName::airline(), 100.0);
+        let bank = (ServiceName::bank(), 300.0);
+        let hotel = (ServiceName::hotel(), 200.0);
         let mut clients = [airline, bank, hotel];
         let transaction = Transaction::new(HashMap::from(clients.clone()));
 
