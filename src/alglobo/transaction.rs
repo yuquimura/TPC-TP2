@@ -4,32 +4,32 @@ use super::transaction_state::TransactionState;
 
 #[allow(dead_code)]
 pub struct Transaction {
-    clients_info: HashMap<String, f64>,
-    clients_state: HashMap<TransactionState, Vec::<String>>
+    services_info: HashMap<String, f64>,
+    services_state: HashMap<TransactionState, Vec::<String>>
 }
 
 impl Transaction {
     #[must_use]
-    pub fn new(clients_info: HashMap<String, f64>) -> Self {
-        let clients_names = clients_info.clone().into_keys().collect();
-        let clients_state = HashMap::from([
-            (TransactionState::Waiting, clients_names)
+    pub fn new(services_info: HashMap<String, f64>) -> Self {
+        let services_names = services_info.clone().into_keys().collect();
+        let services_state = HashMap::from([
+            (TransactionState::Waiting, services_names)
         ]);
         Transaction {
-            clients_info,
-            clients_state
+            services_info,
+            services_state
         }
     }
 
-    pub fn waiting_clients(&self) -> Vec<(String, f64)> {
-        let opt_client_names = self.clients_state.get(&TransactionState::Waiting);
-        let client_names = match opt_client_names {
+    pub fn waiting_services(&self) -> Vec<(String, f64)> {
+        let opt_service_names = self.services_state.get(&TransactionState::Waiting);
+        let service_names = match opt_service_names {
             Some(vec) => vec,
             None => return vec![]
         };
         let mut res = vec![];
-        for name in client_names {
-            let fee = self.clients_info.get(name).expect("[Transaction] Nombre de cliente deberia existir");
+        for name in service_names {
+            let fee = self.services_info.get(name).expect("[Transaction] Nombre de servicee deberia existir");
             res.push((name.clone(), fee.clone()));
         }
         res
@@ -44,19 +44,19 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
-    fn waiting_clients_should_return_waiting_clients_name_and_fee() {
+    fn waiting_services_should_return_waiting_services_name_and_fee() {
         let airline = (ServiceName::airline(), 100.0);
         let bank = (ServiceName::bank(), 300.0);
         let hotel = (ServiceName::hotel(), 200.0);
-        let mut clients = [airline, bank, hotel];
-        let transaction = Transaction::new(HashMap::from(clients.clone()));
+        let mut services = [airline, bank, hotel];
+        let transaction = Transaction::new(HashMap::from(services.clone()));
 
-        let mut waiting_clients = transaction.waiting_clients();
+        let mut waiting_services = transaction.waiting_services();
 
-        clients.sort_by(|a, b| a.0.cmp(&b.0));
-        waiting_clients.sort_by(|a, b| a.0.cmp(&b.0));
+        services.sort_by(|a, b| a.0.cmp(&b.0));
+        waiting_services.sort_by(|a, b| a.0.cmp(&b.0));
 
-        assert_eq!(waiting_clients, clients);
+        assert_eq!(waiting_services, services);
         
     }
 }
