@@ -1,8 +1,6 @@
 use std::{net::UdpSocket, time::Duration};
 
-use super::{socket_error::SocketError, udp_socket_trait::UdpSocketTrait};
-
-const UDP_PACKET_SIZE: usize = 512;
+use super::{socket_error::SocketError, udp_socket_trait::{UDP_PACKET_SIZE, UdpSocketTrait}};
 
 #[allow(dead_code)]
 pub struct UdpSocketWrap {
@@ -21,9 +19,17 @@ impl UdpSocketWrap {
 }
 
 impl UdpSocketTrait for UdpSocketWrap {
-    fn send_to(&mut self, buf: &[u8], addr: &str) -> Result<(), SocketError> {
+    fn send_to(&mut self, bytes_vec: &Vec<u8>, addr: &str) -> Result<(), SocketError> {
+        let mut buf = [0; UDP_PACKET_SIZE];
+        for (i, x) in bytes_vec.iter().enumerate() {
+            if i >= buf.len() {
+                break;
+            }
+            buf[i] = x.clone();
+        }
+                                
         let mut total_bytes_sent = 0;
-        while total_bytes_sent < buf.len() {
+        while total_bytes_sent < bytes_vec.len() {
             let bytes_sent = self
                 .socket
                 .send_to(&buf[total_bytes_sent..], addr)
@@ -36,7 +42,7 @@ impl UdpSocketTrait for UdpSocketWrap {
         Ok(())
     }
 
-    fn recv(&mut self, n_bytes: usize) -> Result<[u8; UDP_PACKET_SIZE], SocketError> {
+    fn recv(&mut self, n_bytes: usize) -> Result<Vec<u8>, SocketError> {
         let mut buf = [0; UDP_PACKET_SIZE];
         let mut total_bytes_recv = 0;
         while total_bytes_recv < n_bytes {
@@ -51,7 +57,8 @@ impl UdpSocketTrait for UdpSocketWrap {
             }
             total_bytes_recv += bytes_recv;
         }
-        Ok(buf)
+        let res = buf[..n_bytes].to_vec();
+        Ok(res)
     }
 }
 
@@ -68,16 +75,16 @@ mod tests {
         let socket = UdpSocket::bind(addr).unwrap();
         let mut client = UdpSocketWrap::new(None);
 
-        let message = "a message";
+        let message = "a message".as_bytes().to_vec();
         const MSG_LEN: usize = 9; // Necesito que se resuelva en tiempo de compilación
         assert_eq!(MSG_LEN, message.len());
         let mut buf = [0; MSG_LEN];
 
-        let res = client.send_to(message.as_bytes(), addr);
+        let res = client.send_to(&message, addr);
         assert!(res.is_ok());
 
         let (_, _) = socket.recv_from(&mut buf).unwrap();
-        assert_eq!(std::str::from_utf8(&buf).unwrap(), message);
+        assert_eq!(buf[..message.len()].to_vec(), message);
     }
 
     #[test]
@@ -86,18 +93,18 @@ mod tests {
         let socket = UdpSocket::bind(addr).unwrap();
         let mut client = UdpSocketWrap::new(None);
 
-        let message = "a message";
+        let message = "a message".as_bytes().to_vec();
         let mut buf = [0; UDP_PACKET_SIZE];
 
-        client.send_to(message.as_bytes(), addr).unwrap();
+        client.send_to(&message, addr).unwrap();
         let (_, client_addr) = socket.recv_from(&mut buf).unwrap();
         socket.send_to(&buf[..message.len()], client_addr).unwrap();
 
         let res = client.recv(message.len());
 
         assert!(res.is_ok());
-        buf = res.unwrap();
-        assert_eq!(&buf[..message.len()], message.as_bytes());
+        let res_vec = res.unwrap();
+        assert_eq!(res_vec, message);
     }
 
     #[test]
