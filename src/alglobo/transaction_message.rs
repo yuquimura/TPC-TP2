@@ -1,10 +1,9 @@
 pub struct TransactionMessage;
 
 impl TransactionMessage {
+    #[must_use]
     pub fn prepare() -> Vec<u8> {
-        let mut message = Vec::new();
-        message.push(b'P');
-        message
+        vec![b'P']
     }
 }
 
@@ -14,7 +13,7 @@ mod tests {
     #[test]
     fn message_prepare_should_return_p() {
         let message = TransactionMessage::prepare();
-        
+
         let mut expected = Vec::new();
         expected.push(b'P');
 

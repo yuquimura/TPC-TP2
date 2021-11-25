@@ -1,6 +1,9 @@
 use std::{net::UdpSocket, time::Duration};
 
-use super::{socket_error::SocketError, udp_socket_trait::{UDP_PACKET_SIZE, UdpSocketTrait}};
+use super::{
+    socket_error::SocketError,
+    udp_socket_trait::{UdpSocketTrait, UDP_PACKET_SIZE},
+};
 
 #[allow(dead_code)]
 pub struct UdpSocketWrap {
@@ -19,15 +22,15 @@ impl UdpSocketWrap {
 }
 
 impl UdpSocketTrait for UdpSocketWrap {
-    fn send_to(&mut self, bytes_vec: &Vec<u8>, addr: &str) -> Result<(), SocketError> {
+    fn send_to(&mut self, bytes_vec: &[u8], addr: &str) -> Result<(), SocketError> {
         let mut buf = [0; UDP_PACKET_SIZE];
         for (i, x) in bytes_vec.iter().enumerate() {
             if i >= buf.len() {
                 break;
             }
-            buf[i] = x.clone();
+            buf[i] = *x;
         }
-                                
+
         let mut total_bytes_sent = 0;
         while total_bytes_sent < bytes_vec.len() {
             let bytes_sent = self

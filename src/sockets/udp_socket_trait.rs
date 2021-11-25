@@ -11,7 +11,7 @@ pub trait UdpSocketTrait {
     ///
     /// `SocketError::ZeroBytes` => Aún quedan bytes por enviar,
     /// pero el socket interno no envió ningun byte en el último intento
-    fn send_to(&mut self, buf: &Vec<u8>, addr: &str) -> Result<(), SocketError>;
+    fn send_to(&mut self, buf: &[u8], addr: &str) -> Result<(), SocketError>;
 
     /// # Errors
     ///
