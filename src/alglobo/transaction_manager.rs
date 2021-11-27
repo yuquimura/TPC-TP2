@@ -61,11 +61,14 @@ mod tests {
         let hotel_addr = "127.0.0.1:49157";
         let bank_addr = "127.0.0.1:49158";
 
-        let transaction = Transaction::new(HashMap::from([
-            (ServiceName::airline(), 100.0),
-            (ServiceName::hotel(), 200.0),
-            (ServiceName::bank(), 300.0),
-        ]));
+        let transaction = Transaction::new(
+            0,
+            HashMap::from([
+                (ServiceName::airline(), 100.0),
+                (ServiceName::hotel(), 200.0),
+                (ServiceName::bank(), 300.0),
+            ]),
+        );
 
         let mut mock_socket = MockUdpSocketTrait::new();
 

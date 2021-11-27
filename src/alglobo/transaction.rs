@@ -4,16 +4,18 @@ use super::transaction_state::TransactionState;
 
 #[allow(dead_code)]
 pub struct Transaction {
+    id: u64,
     services_info: HashMap<String, f64>,
     services_state: HashMap<TransactionState, Vec<String>>,
 }
 
 impl Transaction {
     #[must_use]
-    pub fn new(services_info: HashMap<String, f64>) -> Self {
+    pub fn new(id: u64, services_info: HashMap<String, f64>) -> Self {
         let services_names = services_info.clone().into_keys().collect();
         let services_state = HashMap::from([(TransactionState::Waiting, services_names)]);
         Transaction {
+            id,
             services_info,
             services_state,
         }
@@ -51,7 +53,7 @@ mod tests {
         let bank = (ServiceName::bank(), 300.0);
         let hotel = (ServiceName::hotel(), 200.0);
         let mut services = [airline, bank, hotel];
-        let transaction = Transaction::new(HashMap::from(services.clone()));
+        let transaction = Transaction::new(0, HashMap::from(services.clone()));
 
         let mut waiting_services = transaction.waiting_services();
 

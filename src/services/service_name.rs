@@ -12,7 +12,7 @@ impl ServiceName {
     pub fn bank() -> String {
         "Bank".to_string()
     }
-    
+
     #[must_use]
     pub fn hotel() -> String {
         "Hotel".to_string()
