@@ -122,4 +122,73 @@ mod tests {
 
         manager.process(&transaction);
     }
+
+    // #[test]
+    // fn process_transaction_should_send_msg_abort_to_all_services_if_any_service_does_not_respond_to_prepare_msg() {
+    //     let airline_addr = "127.0.0.1:49156";
+    //     let hotel_addr = "127.0.0.1:49157";
+    //     let bank_addr = "127.0.0.1:49158";
+
+    //     let id = 0;
+    //     let airline_fee = 100.0;
+    //     let hotel_fee = 200.0;
+    //     let bank_fee = 300.0;
+    //     let transaction = Transaction::new(
+    //         id,
+    //         HashMap::from([
+    //             (ServiceName::airline(), airline_fee),
+    //             (ServiceName::hotel(), hotel_fee),
+    //             (ServiceName::bank(), bank_fee),
+    //         ]),
+    //     );
+
+    //     let mut mock_socket = MockUdpSocketTrait::new();
+
+    //     let transaction_messages = [
+    //         TransactionMessage::prepare(id, airline_fee),
+    //         TransactionMessage::prepare(id, hotel_fee),
+    //         TransactionMessage::prepare(id, bank_fee),
+    //     ];
+
+    //     let mut messages_clone;
+
+    //     messages_clone = transaction_messages.clone();
+    //     mock_socket
+    //         .expect_send_to()
+    //         .withf(move |bytes_vec, addr| {
+    //             messages_clone.contains(&bytes_vec.to_vec())
+    //                 && [airline_addr, hotel_addr, bank_addr].contains(&addr)
+    //         })
+    //         .returning(|_, _| Ok(()));
+
+    //     messages_clone = transaction_messages.clone();
+    //     mock_socket
+    //         .expect_send_to()
+    //         .withf(move |bytes_vec, addr| {
+    //             messages_clone.contains(&bytes_vec.to_vec())
+    //                 && [airline_addr, hotel_addr, bank_addr].contains(&addr)
+    //         })
+    //         .returning(|_, _| Ok(()));
+
+    //     messages_clone = transaction_messages.clone();
+    //     mock_socket
+    //         .expect_send_to()
+    //         .withf(move |bytes_vec, addr| {
+    //             messages_clone.contains(&bytes_vec.to_vec())
+    //                 && [airline_addr, hotel_addr, bank_addr].contains(&addr)
+    //         })
+    //         .returning(|_, _| Ok(()));
+
+    //     let mut manager = TransactionManager::new(
+    //         0,
+    //         Box::new(mock_socket),
+    //         &HashMap::from([
+    //             (ServiceName::airline(), airline_addr),
+    //             (ServiceName::hotel(), hotel_addr),
+    //             (ServiceName::bank(), bank_addr),
+    //         ]),
+    //     );
+
+    //     manager.process(&transaction);
+    // }
 }
