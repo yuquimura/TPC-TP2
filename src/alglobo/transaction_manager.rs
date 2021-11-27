@@ -87,16 +87,16 @@ mod tests {
             TransactionMessage::prepare(transaction_id, bank_fee),
         ];
 
-        for _ in 0..waiting_services.len() {
-            let addresses_clone = addresses.clone();
-            let messages_clone = transaction_messages.clone();
-            mock_socket
-                .expect_send_to()
-                .withf(move |buf, addr| {
-                    messages_clone.contains(&buf.to_vec()) && addresses_clone.contains(&addr)
-                })
-                .returning(|_, _| Ok(()));
-        }
+        
+        let addresses_clone = addresses.clone();
+        let messages_clone = transaction_messages.clone();
+        mock_socket
+            .expect_send_to()
+            .withf(move |buf, addr| {
+                messages_clone.contains(&buf.to_vec()) && addresses_clone.contains(&addr)
+            })
+            .times(waiting_services.len())
+            .returning(|_, _| Ok(()));
 
         let mut manager = TransactionManager::new(
             0,
@@ -111,70 +111,68 @@ mod tests {
         manager.process(&transaction);
     }
 
-    //     #[test]
-    //     fn process_transaction_should_send_msg_abort_to_all_services_if_any_service_does_not_respond_to_prepare_msg() {
-    //         let airline_addr = "127.0.0.1:49156";
-    //         let hotel_addr = "127.0.0.1:49157";
-    //         let bank_addr = "127.0.0.1:49158";
+    // #[test]
+    // fn process_transaction_should_send_msg_abort_to_all_services_if_any_service_does_not_respond_to_prepare_msg() {
+    //     let airline_addr = "127.0.0.1:49156";
+    //     let hotel_addr = "127.0.0.1:49157";
+    //     let bank_addr = "127.0.0.1:49158";
 
-    //         let transaction_id = 1;
-    //         let airline_fee = 100.0;
-    //         let hotel_fee = 200.0;
-    //         let bank_fee = 300.0;
-    //         let transaction = Transaction::new(
-    //             transaction_id,
-    //             HashMap::from([
-    //                 (ServiceName::airline(), airline_fee),
-    //                 (ServiceName::hotel(), hotel_fee),
-    //                 (ServiceName::bank(), bank_fee),
-    //             ]),
-    //         );
+    //     let transaction_id = 1;
+    //     let airline_fee = 100.0;
+    //     let hotel_fee = 200.0;
+    //     let bank_fee = 300.0;
+    //     let transaction = Transaction::new(
+    //         transaction_id,
+    //         HashMap::from([
+    //             (ServiceName::airline(), airline_fee),
+    //             (ServiceName::hotel(), hotel_fee),
+    //             (ServiceName::bank(), bank_fee),
+    //         ]),
+    //     );
 
-    //         let waiting_services = transaction.waiting_services();
+    //     let waiting_services = transaction.waiting_services();
 
-    //         let mut mock_socket = MockUdpSocketTrait::new();
+    //     let mut mock_socket = MockUdpSocketTrait::new();
 
-    //         for _ in 0..waiting_services.len() {
-    //             mock_socket
-    //                 .expect_send_to()
-    //                 .withf(move |_, _| true)
-    //                 .returning(|_, _| Ok(()));
-    //         }
+    //     mock_socket
+    //         .expect_send_to()
+    //         .withf(move |_, _| true)
+    //         .times(waiting_services.len())
+    //         .returning(|_, _| Ok(()));
 
-    //         let addresses = [
-    //             airline_addr,
-    //             hotel_addr,
-    //             bank_addr
-    //         ];
+    //     let addresses = [
+    //         airline_addr,
+    //         hotel_addr,
+    //         bank_addr
+    //     ];
 
-    //         let abort_messages = [
-    //             TransactionMessage::abort(transaction_id, airline_fee),
-    //             TransactionMessage::abort(transaction_id, hotel_fee),
-    //             TransactionMessage::abort(transaction_id, bank_fee),
-    //         ];
+    //     let abort_messages = [
+    //         TransactionMessage::abort(transaction_id, airline_fee),
+    //         TransactionMessage::abort(transaction_id, hotel_fee),
+    //         TransactionMessage::abort(transaction_id, bank_fee),
+    //     ];
 
-    //         for _ in 0..waiting_services.len() {
-    //             let addresses_clone = addresses.clone();
-    //             let messages_clone = abort_messages.clone();
-    //             mock_socket
-    //                 .expect_send_to()
-    //                 .withf(move |buf, addr|
-    //                     messages_clone.contains(&buf.to_vec())
-    //                     && addresses_clone.contains(&addr)
-    //                 )
-    //                 .returning(|_, _| Ok(()));
-    //         }
+    //     let addresses_clone = addresses.clone();
+    //     let messages_clone = abort_messages.clone();
+    //     mock_socket
+    //         .expect_send_to()
+    //         .withf(move |buf, addr|
+    //             messages_clone.contains(&buf.to_vec())
+    //             && addresses_clone.contains(&addr)
+    //         )
+    //         .times(waiting_services.len())
+    //         .returning(|_, _| Ok(()));
 
-    //         let mut manager = TransactionManager::new(
-    //             0,
-    //             Box::new(mock_socket),
-    //             &HashMap::from([
-    //                 (ServiceName::airline(), airline_addr),
-    //                 (ServiceName::hotel(), hotel_addr),
-    //                 (ServiceName::bank(), bank_addr),
-    //             ]),
-    //         );
+    //     let mut manager = TransactionManager::new(
+    //         0,
+    //         Box::new(mock_socket),
+    //         &HashMap::from([
+    //             (ServiceName::airline(), airline_addr),
+    //             (ServiceName::hotel(), hotel_addr),
+    //             (ServiceName::bank(), bank_addr),
+    //         ]),
+    //     );
 
-    //         manager.process(&transaction);
-    //     }
+    //     manager.process(&transaction);
+    // }
 }
