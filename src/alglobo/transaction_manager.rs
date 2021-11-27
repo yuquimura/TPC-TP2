@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 
@@ -26,7 +26,7 @@ impl TransactionManager {
         //     let receiver = TransactionReceiver::new();
         //     receiver.recv()
         // });
-        
+
         TransactionManager {
             id,
             udp_socket_wrap,
@@ -92,7 +92,6 @@ mod tests {
             TransactionMessage::prepare(transaction_id, bank_fee),
         ];
 
-        
         let addresses_clone = addresses.clone();
         let messages_clone = transaction_messages.clone();
         mock_socket

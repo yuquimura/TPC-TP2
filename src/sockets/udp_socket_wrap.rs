@@ -2,8 +2,8 @@ use std::{net::UdpSocket, time::Duration};
 
 use super::{
     socket_error::SocketError,
+    udp_socket_receiver::UdpSocketReceiver,
     udp_socket_sender::{UdpSocketSender, UDP_PACKET_SIZE},
-    udp_socket_receiver::{UdpSocketReceiver},
 };
 
 #[allow(dead_code)]
@@ -19,6 +19,18 @@ impl UdpSocketWrap {
             .set_read_timeout(opt_timeout)
             .expect("[UdpSocketWrap] Set timeout ha fallado");
         UdpSocketWrap { socket }
+    }
+    /// # Errors
+    ///
+    /// `SocketError::CloneFailed` => Fallo en el intento de clonación
+    pub fn try_clone(&self) -> Result<Self, SocketError> {
+        let socket_clone = match self.socket.try_clone() {
+            Ok(clone) => clone,
+            Err(_) => return Err(SocketError::CloneFailed),
+        };
+        Ok(UdpSocketWrap {
+            socket: socket_clone,
+        })
     }
 }
 
@@ -124,25 +136,30 @@ mod tests {
         };
     }
 
-    // #[test]
-    // #[timeout(5000)]
-    // fn it_should_be_send_from_the_original_and_receive_from_the_cloned() {
-    //     let addr = "127.0.0.1:49155"; // Test en paralelo => Usar un puerto distinto
-    //     let socket = UdpSocket::bind(addr).unwrap();
-    //     let mut original = UdpSocketWrap::new(None);
-    //     let mut clone = original.try_clone();
+    #[test]
+    #[timeout(5000)]
+    fn it_should_be_send_from_the_original_and_receive_from_the_cloned() {
+        let addr = "127.0.0.1:49155"; // Test en paralelo => Usar un puerto distinto
+        let socket = UdpSocket::bind(addr).unwrap();
+        let original = UdpSocketWrap::new(None);
+        let clone = original.try_clone().unwrap();
 
-    //     let message = "a message".as_bytes().to_vec();
-    //     let mut buf = [0; UDP_PACKET_SIZE];
+        let mut original_box: Box<dyn UdpSocketSender> = Box::new(original);
+        let mut clone_box: Box<dyn UdpSocketReceiver> = Box::new(clone);
 
-    //     client.send_to(&message, addr).unwrap();
-    //     let (_, client_addr) = socket.recv_from(&mut buf).unwrap();
-    //     socket.send_to(&buf[..message.len()], client_addr).unwrap();
+        let message = "a message".as_bytes().to_vec();
+        let mut buf = [0; UDP_PACKET_SIZE];
 
-    //     let res = client.recv(message.len());
+        let send_res = original_box.send_to(&message, addr);
+        assert!(send_res.is_ok());
 
-    //     assert!(res.is_ok());
-    //     let res_vec = res.unwrap();
-    //     assert_eq!(res_vec, message);
-    // }
+        let (_, sender_addr) = socket.recv_from(&mut buf).unwrap();
+        socket.send_to(&buf[..message.len()], sender_addr).unwrap();
+
+        let recv_res = clone_box.recv(message.len());
+        assert!(recv_res.is_ok());
+
+        let result_message = recv_res.unwrap();
+        assert_eq!(result_message, message);
+    }
 }
