@@ -2,7 +2,8 @@ use std::{net::UdpSocket, time::Duration};
 
 use super::{
     socket_error::SocketError,
-    udp_socket_trait::{UdpSocketTrait, UDP_PACKET_SIZE},
+    udp_socket_sender::{UdpSocketSender, UDP_PACKET_SIZE},
+    udp_socket_receiver::{UdpSocketReceiver},
 };
 
 #[allow(dead_code)]
@@ -21,7 +22,7 @@ impl UdpSocketWrap {
     }
 }
 
-impl UdpSocketTrait for UdpSocketWrap {
+impl UdpSocketSender for UdpSocketWrap {
     fn send_to(&mut self, bytes_vec: &[u8], addr: &str) -> Result<(), SocketError> {
         let mut buf = [0; UDP_PACKET_SIZE];
         for (i, x) in bytes_vec.iter().enumerate() {
@@ -44,7 +45,8 @@ impl UdpSocketTrait for UdpSocketWrap {
         }
         Ok(())
     }
-
+}
+impl UdpSocketReceiver for UdpSocketWrap {
     fn recv(&mut self, n_bytes: usize) -> Result<Vec<u8>, SocketError> {
         let mut buf = [0; UDP_PACKET_SIZE];
         let mut total_bytes_recv = 0;
@@ -121,4 +123,26 @@ mod tests {
             Err(err) => assert_eq!(err, SocketError::Timeout),
         };
     }
+
+    // #[test]
+    // #[timeout(5000)]
+    // fn it_should_be_send_from_the_original_and_receive_from_the_cloned() {
+    //     let addr = "127.0.0.1:49155"; // Test en paralelo => Usar un puerto distinto
+    //     let socket = UdpSocket::bind(addr).unwrap();
+    //     let mut original = UdpSocketWrap::new(None);
+    //     let mut clone = original.try_clone();
+
+    //     let message = "a message".as_bytes().to_vec();
+    //     let mut buf = [0; UDP_PACKET_SIZE];
+
+    //     client.send_to(&message, addr).unwrap();
+    //     let (_, client_addr) = socket.recv_from(&mut buf).unwrap();
+    //     socket.send_to(&buf[..message.len()], client_addr).unwrap();
+
+    //     let res = client.recv(message.len());
+
+    //     assert!(res.is_ok());
+    //     let res_vec = res.unwrap();
+    //     assert_eq!(res_vec, message);
+    // }
 }

@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
-use crate::sockets::udp_socket_trait::UdpSocketTrait;
+use crate::sockets::udp_socket_sender::UdpSocketSender;
 
 use super::{transaction::Transaction, transaction_message::TransactionMessage};
 
 #[allow(dead_code)]
 struct TransactionManager {
     pub id: usize,
-    udp_socket_wrap: Box<dyn UdpSocketTrait>,
+    udp_socket_wrap: Box<dyn UdpSocketSender>,
     services_addrs: HashMap<String, String>,
 }
 
@@ -15,13 +15,18 @@ struct TransactionManager {
 impl TransactionManager {
     pub fn new(
         id: usize,
-        udp_socket_wrap: Box<dyn UdpSocketTrait>,
+        udp_socket_wrap: Box<dyn UdpSocketSender>,
         services_addrs_str: &HashMap<String, &str>,
     ) -> Self {
         let services_addrs = services_addrs_str
             .iter()
             .map(|(name, addr)| (name.clone(), (*addr).to_string()))
             .collect();
+        // thread::spawn(|| {
+        //     let receiver = TransactionReceiver::new();
+        //     receiver.recv()
+        // });
+        
         TransactionManager {
             id,
             udp_socket_wrap,
@@ -51,7 +56,7 @@ mod tests {
     use crate::{
         alglobo::{transaction::Transaction, transaction_message::TransactionMessage},
         services::service_name::ServiceName,
-        sockets::udp_socket_trait::MockUdpSocketTrait,
+        sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
     use super::*;
@@ -77,7 +82,7 @@ mod tests {
 
         let waiting_services = transaction.waiting_services();
 
-        let mut mock_socket = MockUdpSocketTrait::new();
+        let mut mock_socket = MockUdpSocketSender::new();
 
         let addresses = [airline_addr, hotel_addr, bank_addr];
 
@@ -132,7 +137,7 @@ mod tests {
 
     //     let waiting_services = transaction.waiting_services();
 
-    //     let mut mock_socket = MockUdpSocketTrait::new();
+    //     let mut mock_socket = MockUdpSocketSender::new();
 
     //     mock_socket
     //         .expect_send_to()
