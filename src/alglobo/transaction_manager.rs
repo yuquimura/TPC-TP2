@@ -30,14 +30,15 @@ impl TransactionManager {
     }
 
     pub fn process(&mut self, transaction: &Transaction) {
+        let id = transaction.get_id();
         let waiting_services = transaction.waiting_services();
-        for (name, _fee) in waiting_services {
+        for (name, fee) in waiting_services {
             let addr = self
                 .services_addrs
                 .get(&name)
                 .expect("[Transaction Manager] Direccion del servicio no existe");
             self.udp_socket_wrap
-                .send_to(&TransactionMessage::prepare(), addr)
+                .send_to(&TransactionMessage::prepare(id, fee), addr)
                 .expect("[Transaction Manager] Enviar el mensaje PREPARE no deberia fallar");
         }
     }
@@ -61,37 +62,50 @@ mod tests {
         let hotel_addr = "127.0.0.1:49157";
         let bank_addr = "127.0.0.1:49158";
 
+        let id = 0;
+        let airline_fee = 100.0;
+        let hotel_fee = 200.0;
+        let bank_fee = 300.0;
         let transaction = Transaction::new(
-            0,
+            id,
             HashMap::from([
-                (ServiceName::airline(), 100.0),
-                (ServiceName::hotel(), 200.0),
-                (ServiceName::bank(), 300.0),
+                (ServiceName::airline(), airline_fee),
+                (ServiceName::hotel(), hotel_fee),
+                (ServiceName::bank(), bank_fee),
             ]),
         );
 
         let mut mock_socket = MockUdpSocketTrait::new();
 
+        let transaction_messages = [
+            TransactionMessage::prepare(id, airline_fee),
+            TransactionMessage::prepare(id, hotel_fee),
+            TransactionMessage::prepare(id, bank_fee),
+        ];
+        let mut messages_clone;
+        messages_clone = transaction_messages.clone();
         mock_socket
             .expect_send_to()
             .withf(move |bytes_vec, addr| {
-                bytes_vec == &TransactionMessage::prepare()
+                messages_clone.contains(&bytes_vec.to_vec())
                     && [airline_addr, hotel_addr, bank_addr].contains(&addr)
             })
             .returning(|_, _| Ok(()));
 
+        messages_clone = transaction_messages.clone();
         mock_socket
             .expect_send_to()
             .withf(move |bytes_vec, addr| {
-                bytes_vec == &TransactionMessage::prepare()
+                messages_clone.contains(&bytes_vec.to_vec())
                     && [airline_addr, hotel_addr, bank_addr].contains(&addr)
             })
             .returning(|_, _| Ok(()));
 
+        messages_clone = transaction_messages.clone();
         mock_socket
             .expect_send_to()
             .withf(move |bytes_vec, addr| {
-                bytes_vec == &TransactionMessage::prepare()
+                messages_clone.contains(&bytes_vec.to_vec())
                     && [airline_addr, hotel_addr, bank_addr].contains(&addr)
             })
             .returning(|_, _| Ok(()));

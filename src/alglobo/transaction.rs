@@ -38,6 +38,11 @@ impl Transaction {
         }
         res
     }
+
+    #[must_use]
+    pub fn get_id(&self) -> u64 {
+        self.id
+    }
 }
 
 #[cfg(test)]
