@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use super::transaction_state::TransactionState;
+use super::{transaction_state::TransactionState, transactionable::Transactionable};
 
 #[allow(dead_code)]
 pub struct Transaction {
@@ -26,11 +26,6 @@ impl Transaction {
     }
 
     #[must_use]
-    pub fn get_id(&self) -> u64 {
-        self.id
-    }
-
-    #[must_use]
     pub fn all_services(&self) -> HashMap<String, f64> {
         self.services_info.clone()
     }
@@ -50,32 +45,10 @@ impl Transaction {
         res
     }
 
-    pub fn accept(&mut self, name: String) -> bool {
-        {
-            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
-            if !waiting_services.remove(&name) {
-                return false;
-            }
-        }
-        self.update_state(name, TransactionState::Accepted);
-        true
-    }
-
     #[must_use]
     pub fn is_accepted(&self) -> bool {
         self.is_state(TransactionState::Accepted)
-    }
-
-    pub fn abort(&mut self, name: String) -> bool {
-        {
-            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
-            if !waiting_services.remove(&name) {
-                return false;
-            }
-        }
-        self.update_state(name, TransactionState::Aborted);
-        true
-    }
+    } 
 
     #[must_use]
     pub fn is_aborted(&self) -> bool {
@@ -100,6 +73,34 @@ impl Transaction {
     fn get_mut_state_services(&mut self, state: &TransactionState) -> &mut HashSet<String> {
         let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
         self.services_state.get_mut(state).expect(&err_msg)
+    }
+}
+
+impl Transactionable for Transaction {
+    fn get_id(&self) -> u64 {
+        self.id
+    }
+
+    fn accept(&mut self, name: String) -> bool {
+        {
+            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
+            if !waiting_services.remove(&name) {
+                return false;
+            }
+        }
+        self.update_state(name, TransactionState::Accepted);
+        true
+    }
+
+    fn abort(&mut self, name: String) -> bool {
+        {
+            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
+            if !waiting_services.remove(&name) {
+                return false;
+            }
+        }
+        self.update_state(name, TransactionState::Aborted);
+        true
     }
 }
 

@@ -9,6 +9,7 @@ use crate::sockets::udp_socket_sender::UdpSocketSender;
 use super::{
     transaction::Transaction, transaction_code::TransactionCode,
     transaction_error::TransactionError, transaction_message::TransactionMessage,
+    transactionable::Transactionable,
 };
 
 #[allow(dead_code)]
