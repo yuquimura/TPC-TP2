@@ -27,7 +27,7 @@ impl TransactionManager {
     pub fn new(
         id: usize,
         udp_socket_wrap: Box<dyn UdpSocketSender>,
-        services_addrs_str: &HashMap<String, &str>,
+        services_addrs_str: &HashMap<String, &str>, // Voltear => (addr, name)
         timeout: Duration,
     ) -> Self {
         let services_addrs = services_addrs_str
@@ -36,7 +36,7 @@ impl TransactionManager {
             .collect();
         // thread::spawn(|| {
         //     let receiver = TransactionReceiver::new();
-        //     receiver.recv()
+        //     receiver.recv_forever()
         // });
 
         TransactionManager {
