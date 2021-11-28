@@ -17,7 +17,7 @@ impl TransactionRequest {
         match code {
             TransactionCode::Prepare => b'P',
             TransactionCode::Abort => b'A',
-            _ => panic!("{}", err_msg)
+            TransactionCode::Accept => panic!("{}", err_msg),
         }
     }
 }

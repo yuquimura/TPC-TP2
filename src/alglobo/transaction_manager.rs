@@ -5,17 +5,12 @@ use std::{
 };
 
 use crate::{
-    transactions::{
-        transaction_code::TransactionCode,
-        transaction_request::TransactionRequest
-    },
-    sockets::udp_socket_sender::UdpSocketSender
+    sockets::udp_socket_sender::UdpSocketSender,
+    transactions::{transaction_code::TransactionCode, transaction_request::TransactionRequest},
 };
 
 use super::{
-    transaction::Transaction,
-    transaction_error::TransactionError,
-    transactionable::Transactionable,
+    transaction::Transaction, transaction_error::TransactionError, transactionable::Transactionable,
 };
 
 #[allow(dead_code)]
@@ -162,10 +157,9 @@ mod tests {
     use super::*;
 
     use crate::{
-        services::service_name::ServiceName,
-        sockets::udp_socket_sender::MockUdpSocketSender,
+        services::service_name::ServiceName, sockets::udp_socket_sender::MockUdpSocketSender,
     };
-    
+
     use std::collections::HashMap;
 
     #[test]

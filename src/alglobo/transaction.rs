@@ -48,7 +48,7 @@ impl Transaction {
     #[must_use]
     pub fn is_accepted(&self) -> bool {
         self.is_state(TransactionState::Accepted)
-    } 
+    }
 
     #[must_use]
     pub fn is_aborted(&self) -> bool {

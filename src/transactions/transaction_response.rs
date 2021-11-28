@@ -15,7 +15,7 @@ impl TransactionResponse {
         let err_msg = format!("[Transaction Response] No hay respuesta para {}", code);
         match code {
             TransactionCode::Accept => b'o',
-            _ => panic!("{}", err_msg)
+            _ => panic!("{}", err_msg),
         }
     }
 }
