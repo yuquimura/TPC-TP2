@@ -81,7 +81,7 @@ impl TransactionManager {
         let res = self.wait_update(|opt_transaction| {
             !opt_transaction
                 .as_ref()
-                .expect("[Transaction Manager] La transacción actual deberia existir")
+                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
                 .is_accepted()
         });
         res.is_ok()
@@ -106,7 +106,7 @@ impl TransactionManager {
         let res = self.wait_update(|opt_transaction| {
             !opt_transaction
                 .as_ref()
-                .expect("[Transaction Manager] La transacción actual deberia existir")
+                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
                 .is_aborted()
         });
         res.is_ok()
@@ -124,11 +124,11 @@ impl TransactionManager {
                 self.timeout,
                 condition,
             )
-            .expect("[Transaction Manager] Lock de transacción envenenado");
+            .expect("[Transaction Manager] Lock de transacci\u{f3}n envenenado");
         if res.1.timed_out() {
             return Err(TransactionError::Timeout);
         }
-        return Ok(());
+        Ok(())
     }
 
     fn send_messages(
@@ -138,13 +138,14 @@ impl TransactionManager {
         services_info: HashMap<String, f64>,
     ) {
         for (name, fee) in services_info {
-            let addr = self
-                .services_addrs
-                .get(&name)
-                .expect("[Transaction Manager] La dirección IP del servicio web deberia existir");
+            let addr = self.services_addrs.get(&name).expect(
+                "[Transaction Manager] La direcci\u{f3}n IP del servicio web deberia existir",
+            );
             self.udp_socket_wrap
-                .send_to(&TransactionMessage::build(code.clone(), id, fee), addr)
-                .expect("[Transaction Manager] Enviar mensaje de transacción no deberia fallar");
+                .send_to(&TransactionMessage::build(code, id, fee), addr)
+                .expect(
+                    "[Transaction Manager] Enviar mensaje de transacci\u{f3}n no deberia fallar",
+                );
         }
     }
 }
@@ -195,8 +196,8 @@ mod tests {
             TransactionMessage::build(TransactionCode::Prepare, transaction_id, bank_fee),
         ];
 
-        let addresses_clone = addresses.clone();
-        let messages_clone = transaction_messages.clone();
+        let addresses_clone = addresses;
+        let messages_clone = transaction_messages;
         mock_socket
             .expect_send_to()
             .withf(move |buf, addr| {
@@ -264,8 +265,8 @@ mod tests {
             TransactionMessage::build(TransactionCode::Abort, transaction_id, bank_fee),
         ];
 
-        let addresses_clone = addresses.clone();
-        let messages_clone = abort_messages.clone();
+        let addresses_clone = addresses;
+        let messages_clone = abort_messages;
         mock_socket
             .expect_send_to()
             .withf(move |buf, addr| {

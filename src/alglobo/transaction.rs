@@ -37,7 +37,7 @@ impl Transaction {
 
     #[must_use]
     pub fn waiting_services(&self) -> HashMap<String, f64> {
-        let waiting_services = self.get_state_services(TransactionState::Waiting);
+        let waiting_services = self.get_state_services(&TransactionState::Waiting);
 
         let mut res = HashMap::new();
         for name in waiting_services.iter() {
@@ -52,7 +52,7 @@ impl Transaction {
 
     pub fn accept(&mut self, name: String) -> bool {
         {
-            let waiting_services = self.get_mut_state_services(TransactionState::Waiting);
+            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
             if !waiting_services.remove(&name) {
                 return false;
             }
@@ -68,7 +68,7 @@ impl Transaction {
 
     pub fn abort(&mut self, name: String) -> bool {
         {
-            let waiting_services = self.get_mut_state_services(TransactionState::Waiting);
+            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
             if !waiting_services.remove(&name) {
                 return false;
             }
@@ -77,28 +77,29 @@ impl Transaction {
         true
     }
 
+    #[must_use]
     pub fn is_aborted(&self) -> bool {
         self.is_state(TransactionState::Aborted)
     }
 
     fn update_state(&mut self, name: String, state: TransactionState) {
-        let accepted_services = self.get_mut_state_services(state);
+        let accepted_services = self.get_mut_state_services(&state);
         accepted_services.insert(name);
     }
 
     fn is_state(&self, state: TransactionState) -> bool {
-        let services = self.get_state_services(state);
+        let services = self.get_state_services(&state);
         services.len() == self.services_info.len()
     }
 
-    fn get_state_services(&self, state: TransactionState) -> &HashSet<String> {
+    fn get_state_services(&self, state: &TransactionState) -> &HashSet<String> {
         let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
-        self.services_state.get(&state).expect(&err_msg)
+        self.services_state.get(state).expect(&err_msg)
     }
 
-    fn get_mut_state_services(&mut self, state: TransactionState) -> &mut HashSet<String> {
+    fn get_mut_state_services(&mut self, state: &TransactionState) -> &mut HashSet<String> {
         let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
-        self.services_state.get_mut(&state).expect(&err_msg)
+        self.services_state.get_mut(state).expect(&err_msg)
     }
 }
 
@@ -129,7 +130,7 @@ mod tests {
         let bank = (ServiceName::bank(), 300.0);
         let hotel = (ServiceName::hotel(), 200.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(0, HashMap::from(services.clone()));
+        let mut transaction = Transaction::new(0, HashMap::from(services));
 
         transaction.accept(ServiceName::airline());
         transaction.accept(ServiceName::bank());
@@ -143,7 +144,7 @@ mod tests {
         let bank = (ServiceName::bank(), 300.0);
         let hotel = (ServiceName::hotel(), 200.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(0, HashMap::from(services.clone()));
+        let mut transaction = Transaction::new(0, HashMap::from(services));
 
         transaction.accept(ServiceName::airline());
         transaction.accept(ServiceName::bank());

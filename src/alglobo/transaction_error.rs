@@ -11,7 +11,7 @@ pub enum TransactionError {
 impl fmt::Display for TransactionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            TransactionError::Timeout => write!(f, "Timeout en transacción"),
+            TransactionError::Timeout => write!(f, "Timeout en transacci\u{f3}n"),
         }
     }
 }
