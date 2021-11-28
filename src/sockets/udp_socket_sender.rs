@@ -3,7 +3,7 @@ use super::socket_error::SocketError;
 #[cfg(test)]
 use mockall::automock;
 
-pub const UDP_PACKET_SIZE: usize = 512;
+
 
 #[cfg_attr(test, automock)]
 pub trait UdpSocketSender {
