@@ -1,6 +1,6 @@
 use super::transaction_code::TransactionCode;
 
-const ACCEPT_BYTE:u8 = b'o';
+const ACCEPT_BYTE: u8 = b'o';
 
 pub struct TransactionResponse;
 
@@ -18,14 +18,20 @@ impl TransactionResponse {
         message
     }
 
+    /// # Panics
+    ///
+    /// Esta funcion paniquea si:
+    /// - se recibio un codigo de transaccion desconocido
     #[must_use]
     pub fn transaction_code(code: u8) -> TransactionCode {
-        let err_msg = format!("[Transaction Response] Codigo de transacción desconocido: {}", code);
+        let err_msg = format!(
+            "[Transaction Response] Codigo de transaccion desconocido: {}",
+            code
+        );
         match code {
             ACCEPT_BYTE => TransactionCode::Accept,
-            _ => panic!("{}", err_msg)
-
-        } 
+            _ => panic!("{}", err_msg),
+        }
     }
 
     fn map_transaction_code(code: TransactionCode) -> u8 {

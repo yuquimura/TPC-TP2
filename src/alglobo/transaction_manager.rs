@@ -10,7 +10,8 @@ use crate::{
 };
 
 use super::{
-    transaction::Transaction, transaction_error::TransactionError, transactionable::Transactionable,
+    transaction::Transaction, transaction_error::TransactionError,
+    transactionable::Transactionable, types::CurrentTransactionDeprecated,
 };
 
 #[allow(dead_code)]
@@ -18,7 +19,7 @@ struct TransactionManager {
     pub id: usize,
     udp_socket_wrap: Box<dyn UdpSocketSender>,
     services_addrs: HashMap<String, String>,
-    curr_transaction: Arc<(Mutex<Option<Transaction>>, Condvar)>,
+    curr_transaction: CurrentTransactionDeprecated,
     timeout: Duration,
 }
 
@@ -157,8 +158,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        services::service_name::ServiceName, 
-        sockets::udp_socket_sender::MockUdpSocketSender,
+        services::service_name::ServiceName, sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
     use std::collections::HashMap;
