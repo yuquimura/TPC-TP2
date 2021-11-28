@@ -4,11 +4,17 @@ use std::{
     time::Duration,
 };
 
-use crate::sockets::udp_socket_sender::UdpSocketSender;
+use crate::{
+    transactions::{
+        transaction_code::TransactionCode,
+        transaction_request::TransactionRequest
+    },
+    sockets::udp_socket_sender::UdpSocketSender
+};
 
 use super::{
-    transaction::Transaction, transaction_code::TransactionCode,
-    transaction_error::TransactionError, transaction_message::TransactionMessage,
+    transaction::Transaction,
+    transaction_error::TransactionError,
     transactionable::Transactionable,
 };
 
@@ -143,7 +149,7 @@ impl TransactionManager {
                 "[Transaction Manager] La direcci\u{f3}n IP del servicio web deberia existir",
             );
             self.udp_socket_wrap
-                .send_to(&TransactionMessage::build(code, id, fee), addr)
+                .send_to(&TransactionRequest::build(code, id, fee), addr)
                 .expect(
                     "[Transaction Manager] Enviar mensaje de transacci\u{f3}n no deberia fallar",
                 );
@@ -153,18 +159,14 @@ impl TransactionManager {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use super::*;
 
     use crate::{
-        alglobo::{
-            transaction::Transaction, transaction_code::TransactionCode,
-            transaction_message::TransactionMessage,
-        },
         services::service_name::ServiceName,
         sockets::udp_socket_sender::MockUdpSocketSender,
     };
-
-    use super::*;
+    
+    use std::collections::HashMap;
 
     #[test]
     fn process_transaction_should_send_msg_prepare_to_all_services_in_transaction() {
@@ -192,9 +194,9 @@ mod tests {
         let addresses = [airline_addr, hotel_addr, bank_addr];
 
         let transaction_messages = [
-            TransactionMessage::build(TransactionCode::Prepare, transaction_id, airline_fee),
-            TransactionMessage::build(TransactionCode::Prepare, transaction_id, hotel_fee),
-            TransactionMessage::build(TransactionCode::Prepare, transaction_id, bank_fee),
+            TransactionRequest::build(TransactionCode::Prepare, transaction_id, airline_fee),
+            TransactionRequest::build(TransactionCode::Prepare, transaction_id, hotel_fee),
+            TransactionRequest::build(TransactionCode::Prepare, transaction_id, bank_fee),
         ];
 
         let addresses_clone = addresses;
@@ -261,9 +263,9 @@ mod tests {
         let addresses = [airline_addr, hotel_addr, bank_addr];
 
         let abort_messages = [
-            TransactionMessage::build(TransactionCode::Abort, transaction_id, airline_fee),
-            TransactionMessage::build(TransactionCode::Abort, transaction_id, hotel_fee),
-            TransactionMessage::build(TransactionCode::Abort, transaction_id, bank_fee),
+            TransactionRequest::build(TransactionCode::Abort, transaction_id, airline_fee),
+            TransactionRequest::build(TransactionCode::Abort, transaction_id, hotel_fee),
+            TransactionRequest::build(TransactionCode::Abort, transaction_id, bank_fee),
         ];
 
         let addresses_clone = addresses;
