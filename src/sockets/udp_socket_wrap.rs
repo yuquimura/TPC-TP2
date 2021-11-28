@@ -59,12 +59,13 @@ impl UdpSocketSender for UdpSocketWrap {
     }
 }
 impl UdpSocketReceiver for UdpSocketWrap {
-    fn recv(&mut self, n_bytes: usize) -> Result<Vec<u8>, SocketError> {
+    fn recv(&mut self, n_bytes: usize) -> Result<(Vec<u8>, String), SocketError> {
         let mut buf = [0; UDP_PACKET_SIZE];
+        let mut from_addr= "".to_string();
         let mut total_bytes_recv = 0;
         while total_bytes_recv < n_bytes {
             let res = self.socket.recv_from(&mut buf[total_bytes_recv..]);
-            let (bytes_recv, _) = match res {
+            let (bytes_recv, addr) = match res {
                 Ok(value) => value,
                 Err(_) => return Err(SocketError::Timeout),
             };
@@ -73,9 +74,10 @@ impl UdpSocketReceiver for UdpSocketWrap {
                 return Err(SocketError::ZeroBytes);
             }
             total_bytes_recv += bytes_recv;
+            from_addr = addr.to_string();
         }
         let res = buf[..n_bytes].to_vec();
-        Ok(res)
+        Ok((res, from_addr))
     }
 }
 
@@ -120,7 +122,7 @@ mod tests {
         let res = client.recv(message.len());
 
         assert!(res.is_ok());
-        let res_vec = res.unwrap();
+        let res_vec = res.unwrap().0;
         assert_eq!(res_vec, message);
     }
 
@@ -159,7 +161,7 @@ mod tests {
         let recv_res = clone_box.recv(message.len());
         assert!(recv_res.is_ok());
 
-        let result_message = recv_res.unwrap();
+        let result_message = recv_res.unwrap().0;
         assert_eq!(result_message, message);
     }
 }
