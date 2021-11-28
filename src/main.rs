@@ -1,4 +1,3 @@
-mod connections;
 mod services;
 
 fn main() {
