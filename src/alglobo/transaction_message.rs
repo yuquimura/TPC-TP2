@@ -1,23 +1,22 @@
+use super::transaction_code::TransactionCode;
+
 pub struct TransactionMessage;
 
 impl TransactionMessage {
     #[must_use]
-    pub fn prepare(id: u64, fee: f64) -> Vec<u8> {
-        let mut message = vec![b'P'];
-        TransactionMessage::add_id_and_fee_to_message(&mut message, id, fee);
-        message
-    }
-
-    #[must_use]
-    pub fn abort(id: u64, fee: f64) -> Vec<u8> {
-        let mut message = vec![b'A'];
-        TransactionMessage::add_id_and_fee_to_message(&mut message, id, fee);
-        message
-    }
-
-    fn add_id_and_fee_to_message(message: &mut Vec<u8>, id: u64, fee: f64) {
+    pub fn build(code: TransactionCode, id: u64, fee: f64) -> Vec<u8> {
+        let code = TransactionMessage::map_transaction_code(code);
+        let mut message = vec![code];
         message.append(&mut id.to_be_bytes().to_vec());
         message.append(&mut fee.to_be_bytes().to_vec());
+        message
+    }
+
+    fn map_transaction_code(code: TransactionCode) -> u8 {
+        match code {
+            TransactionCode::Prepare => b'P',
+            TransactionCode::Abort => b'A',
+        }
     }
 }
 
@@ -26,10 +25,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn prepare_should_return_message_p_with_id_and_fee() {
+    fn build_should_return_message_p_with_id_and_fee_when_code_is_prepare() {
         let id = 0;
         let fee = 100.0;
-        let message = TransactionMessage::prepare(id, fee);
+        let message = TransactionMessage::build(TransactionCode::Prepare, id, fee);
 
         let mut expected = vec![b'P'];
         expected.append(&mut id.to_be_bytes().to_vec());
@@ -39,10 +38,10 @@ mod tests {
     }
 
     #[test]
-    fn abort_should_return_a_with_id_and_fee() {
+    fn build_should_return_message_a_with_id_and_fee_when_code_is_abort() {
         let id = 0;
         let fee = 100.0;
-        let message = TransactionMessage::abort(id, fee);
+        let message = TransactionMessage::build(TransactionCode::Abort, id, fee);
 
         let mut expected = vec![b'A'];
         expected.append(&mut id.to_be_bytes().to_vec());

@@ -16,6 +16,7 @@ impl Transaction {
         let services_state = HashMap::from([
             (TransactionState::Waiting, services_names),
             (TransactionState::Accepted, HashSet::new()),
+            (TransactionState::Aborted, HashSet::new()),
         ]);
         Transaction {
             id,
@@ -30,49 +31,74 @@ impl Transaction {
     }
 
     #[must_use]
-    pub fn waiting_services(&self) -> Vec<(String, f64)> {
-        let opt_service_names = self.services_state.get(&TransactionState::Waiting);
-        let service_names = match opt_service_names {
-            Some(vec) => vec,
-            None => return vec![],
-        };
-        let mut res = vec![];
-        for name in service_names {
+    pub fn all_services(&self) -> HashMap<String, f64> {
+        self.services_info.clone()
+    }
+
+    #[must_use]
+    pub fn waiting_services(&self) -> HashMap<String, f64> {
+        let waiting_services = self.get_state_services(TransactionState::Waiting);
+
+        let mut res = HashMap::new();
+        for name in waiting_services.iter() {
             let fee = self
                 .services_info
                 .get(name)
                 .expect("[Transaction] Nombre de servicee deberia existir");
-            res.push((name.clone(), *fee));
+            res.insert(name.clone(), *fee);
         }
         res
     }
 
     pub fn accept(&mut self, name: String) -> bool {
         {
-            let waiting_services = self
-                .services_state
-                .get_mut(&TransactionState::Waiting)
-                .expect("[Transaccion] Los servicios en espera deberian existir");
+            let waiting_services = self.get_mut_state_services(TransactionState::Waiting);
             if !waiting_services.remove(&name) {
                 return false;
             }
         }
-        let accepted_services = self
-            .services_state
-            .get_mut(&TransactionState::Accepted)
-            .expect("[Transaccion] Los servicios en aceptados deberian existir");
-        accepted_services.insert(name);
+        self.update_state(name, TransactionState::Accepted);
         true
     }
 
     #[must_use]
     pub fn is_accepted(&self) -> bool {
-        let accepted_services = self
-            .services_state
-            .get(&TransactionState::Accepted)
-            .expect("[Transaccion] Los servicios en aceptados deberian existir");
+        self.is_state(TransactionState::Accepted)
+    }
 
-        accepted_services.len() == self.services_info.len()
+    pub fn abort(&mut self, name: String) -> bool {
+        {
+            let waiting_services = self.get_mut_state_services(TransactionState::Waiting);
+            if !waiting_services.remove(&name) {
+                return false;
+            }
+        }
+        self.update_state(name, TransactionState::Aborted);
+        true
+    }
+
+    pub fn is_aborted(&self) -> bool {
+        self.is_state(TransactionState::Aborted)
+    }
+
+    fn update_state(&mut self, name: String, state: TransactionState) {
+        let accepted_services = self.get_mut_state_services(state);
+        accepted_services.insert(name);
+    }
+
+    fn is_state(&self, state: TransactionState) -> bool {
+        let services = self.get_state_services(state);
+        services.len() == self.services_info.len()
+    }
+
+    fn get_state_services(&self, state: TransactionState) -> &HashSet<String> {
+        let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
+        self.services_state.get(&state).expect(&err_msg)
+    }
+
+    fn get_mut_state_services(&mut self, state: TransactionState) -> &mut HashSet<String> {
+        let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
+        self.services_state.get_mut(&state).expect(&err_msg)
     }
 }
 
@@ -85,16 +111,14 @@ mod tests {
 
     #[test]
     fn waiting_services_should_return_waiting_services_name_and_fee() {
-        let airline = (ServiceName::airline(), 100.0);
-        let bank = (ServiceName::bank(), 300.0);
-        let hotel = (ServiceName::hotel(), 200.0);
-        let mut services = [airline, bank, hotel];
-        let transaction = Transaction::new(0, HashMap::from(services.clone()));
+        let services = HashMap::from([
+            (ServiceName::airline(), 100.0),
+            (ServiceName::bank(), 300.0),
+            (ServiceName::hotel(), 200.0),
+        ]);
+        let transaction = Transaction::new(0, services.clone());
 
-        let mut waiting_services = transaction.waiting_services();
-
-        services.sort_by(|a, b| a.0.cmp(&b.0));
-        waiting_services.sort_by(|a, b| a.0.cmp(&b.0));
+        let waiting_services = transaction.waiting_services();
 
         assert_eq!(waiting_services, services);
     }
