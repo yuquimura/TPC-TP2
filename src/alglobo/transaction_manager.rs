@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Condvar, Mutex},
+    time::Duration,
+};
 
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 
@@ -9,6 +13,8 @@ struct TransactionManager {
     pub id: usize,
     udp_socket_wrap: Box<dyn UdpSocketSender>,
     services_addrs: HashMap<String, String>,
+    curr_transaction: Arc<(Mutex<Option<Transaction>>, Condvar)>,
+    timeout: Duration,
 }
 
 #[allow(dead_code)]
@@ -17,6 +23,7 @@ impl TransactionManager {
         id: usize,
         udp_socket_wrap: Box<dyn UdpSocketSender>,
         services_addrs_str: &HashMap<String, &str>,
+        timeout: Duration,
     ) -> Self {
         let services_addrs = services_addrs_str
             .iter()
@@ -31,12 +38,37 @@ impl TransactionManager {
             id,
             udp_socket_wrap,
             services_addrs,
+            curr_transaction: Arc::new((Mutex::new(None), Condvar::new())),
+            timeout,
         }
     }
 
-    pub fn process(&mut self, transaction: &Transaction) {
-        let id = transaction.get_id();
-        let waiting_services = transaction.waiting_services();
+    pub fn process(&mut self, transaction: Transaction) {
+        self.update_curr_transaction(transaction);
+        self.prepare_transaction();
+        //self.wait_transaction_update();
+    }
+
+    fn update_curr_transaction(&mut self, transaction: Transaction) {
+        let mut opt_transaction = self
+            .curr_transaction
+            .0
+            .lock()
+            .expect("[Transaction Manager] Lock de transaccion envenenado");
+        *opt_transaction = Some(transaction);
+    }
+
+    fn prepare_transaction(&mut self) {
+        let opt_transaction = self
+            .curr_transaction
+            .0
+            .lock()
+            .expect("[Transaction Manager] Lock de transaccion envenenado");
+        let transaction_ref = opt_transaction
+            .as_ref()
+            .expect("[Transaction Manager] La transaccion actual deberia exitir");
+        let id = transaction_ref.get_id();
+        let waiting_services = transaction_ref.waiting_services();
         for (name, fee) in waiting_services {
             let addr = self
                 .services_addrs
@@ -47,6 +79,24 @@ impl TransactionManager {
                 .expect("[Transaction Manager] Enviar el mensaje PREPARE no deberia fallar");
         }
     }
+
+    // fn wait_transaction_update(&self) {
+    //     let res = self.curr_transaction
+    //         .1
+    //         .wait_timeout_while(
+    //             self.curr_transaction
+    //                     .0
+    //                     .lock()
+    //                     .unwrap(),
+    //             self.timeout,
+    //             |opt_transaction|
+    //                         opt_transaction
+    //                             .as_ref()
+    //                             .expect("[Transaction Manager] La transacción actual deberia existir")
+    //                             .is_accepted()
+    //         );
+
+    // }
 }
 
 #[cfg(test)]
@@ -110,9 +160,10 @@ mod tests {
                 (ServiceName::hotel(), hotel_addr),
                 (ServiceName::bank(), bank_addr),
             ]),
+            Duration::from_secs(0),
         );
 
-        manager.process(&transaction);
+        manager.process(transaction);
     }
 
     // #[test]
