@@ -4,7 +4,7 @@ use crate::sockets::constants::UDP_PACKET_SIZE;
 use super::{
     socket_error::SocketError,
     udp_socket_receiver::UdpSocketReceiver,
-    udp_socket_sender::{UdpSocketSender, UDP_PACKET_SIZE},
+    udp_socket_sender::{UdpSocketSender},
 };
 
 #[allow(dead_code)]
