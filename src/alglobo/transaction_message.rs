@@ -13,9 +13,11 @@ impl TransactionMessage {
     }
 
     fn map_transaction_code(code: TransactionCode) -> u8 {
+        let err_msg = format!("[Transaction Response] No hay respuesta para {}", code);
         match code {
             TransactionCode::Prepare => b'P',
             TransactionCode::Abort => b'A',
+            _ => panic!("{}", err_msg)
         }
     }
 }

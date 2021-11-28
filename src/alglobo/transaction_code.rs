@@ -4,6 +4,7 @@ use std::fmt;
 pub enum TransactionCode {
     Prepare,
     Abort,
+    Accept,
 }
 
 impl fmt::Display for TransactionCode {
@@ -11,6 +12,7 @@ impl fmt::Display for TransactionCode {
         match *self {
             TransactionCode::Prepare => write!(f, "PREPARAR"),
             TransactionCode::Abort => write!(f, "ABORTAR"),
+            TransactionCode::Accept => write!(f, "ACEPTAR"),
         }
     }
 }
