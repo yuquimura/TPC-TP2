@@ -1,10 +1,9 @@
-use std::{net::UdpSocket, time::Duration};
 use crate::sockets::constants::UDP_PACKET_SIZE;
+use std::{net::UdpSocket, time::Duration};
 
 use super::{
-    socket_error::SocketError,
-    udp_socket_receiver::UdpSocketReceiver,
-    udp_socket_sender::{UdpSocketSender},
+    socket_error::SocketError, udp_socket_receiver::UdpSocketReceiver,
+    udp_socket_sender::UdpSocketSender,
 };
 
 #[allow(dead_code)]
@@ -62,7 +61,7 @@ impl UdpSocketSender for UdpSocketWrap {
 impl UdpSocketReceiver for UdpSocketWrap {
     fn recv(&mut self, n_bytes: usize) -> Result<(Vec<u8>, String), SocketError> {
         let mut buf = [0; UDP_PACKET_SIZE];
-        let mut from_addr= "".to_string();
+        let mut from_addr = "".to_string();
         let mut total_bytes_recv = 0;
         while total_bytes_recv < n_bytes {
             let res = self.socket.recv_from(&mut buf[total_bytes_recv..]);

@@ -157,8 +157,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        services::service_name::ServiceName, 
-        sockets::udp_socket_sender::MockUdpSocketSender,
+        services::service_name::ServiceName, sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
     use std::collections::HashMap;

@@ -3,8 +3,6 @@ use super::socket_error::SocketError;
 #[cfg(test)]
 use mockall::automock;
 
-
-
 #[cfg_attr(test, automock)]
 pub trait UdpSocketSender {
     /// # Errors
