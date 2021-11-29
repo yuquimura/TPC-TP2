@@ -157,7 +157,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        services::service_name::ServiceName, 
+        services2::service_name::ServiceName, 
         sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
