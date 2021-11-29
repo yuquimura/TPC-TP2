@@ -106,7 +106,7 @@ impl Transactionable for Transaction {
 
 #[cfg(test)]
 mod tests {
-    use crate::services2::service_name::ServiceName;
+    use crate::services::service_name::ServiceName;
 
     use super::*;
     use std::collections::HashMap;
