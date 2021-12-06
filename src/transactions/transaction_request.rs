@@ -12,7 +12,7 @@ impl TransactionRequest {
         message
     }
 
-    fn map_transaction_code(code: TransactionCode) -> u8 {
+    pub(crate) fn map_transaction_code(code: TransactionCode) -> u8 {
         let err_msg = format!("[Transaction Response] No hay solicitud para {}", code);
         match code {
             TransactionCode::Prepare => b'P',

@@ -1,5 +1,4 @@
 pub trait CommonClient {
-    fn answer_message() {}
-    fn rollback_message() {}
-    fn start_client(&mut self) {}
+    fn answer_message(&mut self, _vector: Vec<u8>) {}
+    fn start_client(&mut self)->i64;
 }
