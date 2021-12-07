@@ -15,21 +15,18 @@ pub struct Hotel {
     socket_receiver: Box<dyn UdpSocketReceiver>,
     socket_sender: Box<dyn UdpSocketSender>,
     fee_sum: f64,
-    transaction_response: TransactionResponse,
     addr:String
 }
 impl Hotel {
     pub fn new(
         socket_receiver: Box<dyn UdpSocketReceiver>,
         socket_sender: Box<dyn UdpSocketSender>,
-        transaction_response: TransactionResponse,
-        addr:String
+        addr: String
     ) -> Hotel {
         Hotel {
             socket_sender,
             socket_receiver,
             fee_sum: 0.0,
-            transaction_response,
             addr
         }
     }
@@ -39,11 +36,12 @@ impl CommonClient for Hotel {
     fn answer_message(&mut self, vector: Vec<u8>) {
         let code= vector[0];
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare){
-            let id_bytes: [u8; size_of::<u64>()] = vector[1..]
+            let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>()+1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let response = TransactionResponse::build(TransactionCode::Accept,
+                                                      transaction_id);
             let addr = self.addr.clone();
             let _ =self.socket_sender.send_to(&*response, &addr);
         }
@@ -52,7 +50,8 @@ impl CommonClient for Hotel {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let response =TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let response =TransactionResponse::build(TransactionCode::Accept,
+                                                     transaction_id);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>()+1..]
                 .try_into()
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
@@ -66,7 +65,8 @@ impl CommonClient for Hotel {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let response =TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let response =TransactionResponse::build(TransactionCode::Accept,
+                                                     transaction_id);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>()+1..]
                 .try_into()
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
@@ -77,12 +77,11 @@ impl CommonClient for Hotel {
         }
     }
 
-
     fn start_client(&mut self) -> i64 {
         loop {
             let res = self
                 .socket_receiver
-                .recv(TransactionResponse::size());
+                .recv(TransactionRequest::size());
             let res_vec = res.unwrap().0;
             if res_vec[0].to_string() == "q" {
                 break;
@@ -92,12 +91,25 @@ impl CommonClient for Hotel {
         }
         return 0;
     }
+
+
+    fn process_one_transaction(&mut self)->Result<i64, String>{
+        let res = self
+            .socket_receiver
+            .recv(TransactionRequest::size());
+        let res_vec = res.unwrap().0;
+        self.answer_message(res_vec);
+        return Ok(0);
+
+    }
 }
 
-/*#[cfg(test)]
+#[cfg(test)]
 mod tests {
 
     use ntest::timeout;
+    use crate::services::common_client::CommonClient;
+    use crate::services::hotel_client::Hotel;
     use crate::transactions::transaction_code::TransactionCode;
     use crate::transactions::transaction_request::TransactionRequest;
 
@@ -111,12 +123,25 @@ mod tests {
         let hotel_addr = "127.0.0.1:49157";
         let transaction_id = 0;
         let hotel_fee = 100.0;
-        let first_msg = TransactionRequest::build(TransactionCode::Prepare,transaction_id,hotel_fee);
+        let first_msg = TransactionRequest::build(TransactionCode::Prepare,
+                                                  transaction_id,
+                                                  hotel_fee);
+        let response = TransactionResponse::build(TransactionCode::Accept,
+                                                  transaction_id);
         let first_msg_len = first_msg.len();
 
         let mut mock_socket_sender = MockUdpSocketSender::new();
         mock_socket_sender.expect_send_to()
-            .withf(move |n_bytes| n_bytes == &first_msg_len).times(2).returning(|_, _| Ok(()));
+            .withf(move |buff, addr| buff.to_vec() == response && addr==hotel_addr).times(1).returning(|_, _| Ok(()));
 
+        let mut mock_socket_receiver = MockUdpSocketReceiver::new();
+        mock_socket_receiver.expect_recv()
+            .withf(move |n| n==&first_msg_len).times(1).returning(move|_|Ok((first_msg.clone(),hotel_addr.to_string())));
+
+        let mut hotel = Hotel::new(Box::new(mock_socket_receiver),
+                                   Box::new(mock_socket_sender),
+                                   hotel_addr.to_string());
+
+        hotel.process_one_transaction();
     }
-}*/
+}

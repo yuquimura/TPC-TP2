@@ -3,6 +3,14 @@ use super::transaction_code::TransactionCode;
 pub struct TransactionRequest;
 
 impl TransactionRequest {
+
+    #[must_use]
+    pub fn size() -> usize {
+        TransactionRequest::build(TransactionCode::Prepare,
+                                  0,
+                                  0.0).len()
+    }
+
     #[must_use]
     pub fn build(code: TransactionCode, id: u64, fee: f64) -> Vec<u8> {
         let code = TransactionRequest::map_transaction_code(code);
