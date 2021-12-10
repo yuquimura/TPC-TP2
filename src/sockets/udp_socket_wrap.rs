@@ -79,6 +79,10 @@ impl UdpSocketReceiver for UdpSocketWrap {
         let res = buf[..n_bytes].to_vec();
         Ok((res, from_addr))
     }
+
+    fn set_timeout(&mut self, opt_timeout: Option<Duration>){
+        self.socket.set_read_timeout(opt_timeout).expect("[UdpSocketWrap] Set timeout ha fallado");
+    }
 }
 
 #[cfg(test)]
