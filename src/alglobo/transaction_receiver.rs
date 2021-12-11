@@ -13,7 +13,7 @@ use super::types::CurrentTransaction;
 #[allow(dead_code)]
 pub struct TransactionReceiver {
     id: u64,
-    udp_receiver: Box<dyn UdpSocketReceiver>,
+    udp_receiver: Box<dyn UdpSocketReceiver + Send>,
     services_addrs: HashMap<String, String>,
     curr_transaction: CurrentTransaction,
 }
@@ -22,7 +22,7 @@ impl TransactionReceiver {
     #[must_use]
     pub fn new(
         id: u64,
-        udp_receiver: Box<dyn UdpSocketReceiver>,
+        udp_receiver: Box<dyn UdpSocketReceiver + Send>,
         services_addrs_str: &HashMap<&str, String>,
         curr_transaction: CurrentTransaction,
     ) -> Self {

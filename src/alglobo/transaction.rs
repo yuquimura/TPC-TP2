@@ -25,36 +25,6 @@ impl Transaction {
         }
     }
 
-    #[must_use]
-    pub fn all_services(&self) -> HashMap<String, f64> {
-        self.services_info.clone()
-    }
-
-    #[must_use]
-    pub fn waiting_services(&self) -> HashMap<String, f64> {
-        let waiting_services = self.get_state_services(&TransactionState::Waiting);
-
-        let mut res = HashMap::new();
-        for name in waiting_services.iter() {
-            let fee = self
-                .services_info
-                .get(name)
-                .expect("[Transaction] Nombre de servicee deberia existir");
-            res.insert(name.clone(), *fee);
-        }
-        res
-    }
-
-    #[must_use]
-    pub fn is_accepted(&self) -> bool {
-        self.is_state(TransactionState::Accepted)
-    }
-
-    #[must_use]
-    pub fn is_aborted(&self) -> bool {
-        self.is_state(TransactionState::Aborted)
-    }
-
     fn update_state(&mut self, name: String, state: TransactionState) {
         let accepted_services = self.get_mut_state_services(&state);
         accepted_services.insert(name);
@@ -101,6 +71,32 @@ impl Transactionable for Transaction {
         }
         self.update_state(name, TransactionState::Aborted);
         true
+    }
+
+    fn waiting_services(&self) -> HashMap<String, f64> {
+        let waiting_services = self.get_state_services(&TransactionState::Waiting);
+
+        let mut res = HashMap::new();
+        for name in waiting_services.iter() {
+            let fee = self
+                .services_info
+                .get(name)
+                .expect("[Transaction] Nombre de servicee deberia existir");
+            res.insert(name.clone(), *fee);
+        }
+        res
+    }
+
+    fn all_services(&self) -> HashMap<String, f64> {
+        self.services_info.clone()
+    }
+
+    fn is_accepted(&self) -> bool {
+        self.is_state(TransactionState::Accepted)
+    }
+
+    fn is_aborted(&self) -> bool {
+        self.is_state(TransactionState::Aborted)
     }
 }
 
