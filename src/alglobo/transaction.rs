@@ -74,6 +74,17 @@ impl Transactionable for Transaction {
         true
     }
 
+    fn commit(&mut self, name: String) -> bool {
+        {
+            let accepted_services = self.get_mut_state_services(&TransactionState::Accepted);
+            if !accepted_services.remove(&name) {
+                return false;
+            }
+        }
+        self.update_state(name, TransactionState::Commited);
+        true
+    }
+
     fn waiting_services(&self) -> HashMap<String, f64> {
         let waiting_services = self.get_state_services(&TransactionState::Waiting);
 
@@ -90,6 +101,10 @@ impl Transactionable for Transaction {
 
     fn all_services(&self) -> HashMap<String, f64> {
         self.services_info.clone()
+    }
+
+    fn is_waiting(&self) -> bool {
+        self.is_state(TransactionState::Waiting)
     }
 
     fn is_accepted(&self) -> bool {

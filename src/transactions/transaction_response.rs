@@ -1,6 +1,8 @@
 use super::transaction_code::TransactionCode;
 
 const ACCEPT_BYTE: u8 = b'o';
+const ABORT_BYTE: u8 = b'A';
+const COMMIT_BYTE: u8 = b'C';
 
 pub struct TransactionResponse;
 
@@ -30,6 +32,8 @@ impl TransactionResponse {
         );
         match code {
             ACCEPT_BYTE => TransactionCode::Accept,
+            ABORT_BYTE => TransactionCode::Abort,
+            COMMIT_BYTE => TransactionCode::Commit,
             _ => panic!("{}", err_msg),
         }
     }
@@ -38,6 +42,8 @@ impl TransactionResponse {
         let err_msg = format!("[Transaction Response] No hay respuesta para {}", code);
         match code {
             TransactionCode::Accept => ACCEPT_BYTE,
+            TransactionCode::Abort => ABORT_BYTE,
+            TransactionCode::Commit => COMMIT_BYTE,
             _ => panic!("{}", err_msg),
         }
     }

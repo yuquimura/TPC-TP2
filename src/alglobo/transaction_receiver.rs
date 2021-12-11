@@ -90,6 +90,10 @@ impl TransactionReceiver {
             TransactionCode::Accept => {
                 transaction.accept(service_name.to_string());
                 // Log this
+            },
+            TransactionCode::Commit => {
+                transaction.commit(service_name.to_string());
+                // Log this
             }
             _ => println!("Codigo de transaccion no esperado: {}", transaction_code),
         }
@@ -143,6 +147,47 @@ mod tests {
             .returning(move || transaction_id);
         mock_transaction
             .expect_accept()
+            .withf(move |name| name == &airline.1)
+            .times(1)
+            .returning(|_| true);
+
+        let mut receiver = TransactionReceiver::new(
+            0,
+            Box::new(mock_socket),
+            &services_addrs,
+            Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
+        );
+
+        assert!(receiver.recv().is_ok());
+    }
+
+    #[test]
+    fn it_should_change_transaction_service_state_to_commited_when_recv_commit_from_it() {
+        let airline = ("127.0.0.1:49156", ServiceName::airline());
+        let mut airline_clone;
+
+        airline_clone = airline.clone();
+        let services_addrs = HashMap::from([airline_clone]);
+
+        let transaction_id = 0;
+        let response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+
+        let mut mock_socket = MockUdpSocketReceiver::new();
+        airline_clone = airline.clone();
+        let response_len = response.len();
+        mock_socket
+            .expect_recv()
+            .withf(move |n_bytes| n_bytes == &response_len)
+            .times(1)
+            .returning(move |_| Ok((response.clone(), airline_clone.0.to_string())));
+
+        let mut mock_transaction = MockTransactionable::new();
+        mock_transaction
+            .expect_get_id()
+            .times(1)
+            .returning(move || transaction_id);
+        mock_transaction
+            .expect_commit()
             .withf(move |name| name == &airline.1)
             .times(1)
             .returning(|_| true);

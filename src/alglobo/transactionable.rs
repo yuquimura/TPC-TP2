@@ -11,9 +11,13 @@ pub trait Transactionable {
 
     fn abort(&mut self, name: String) -> bool;
 
+    fn commit(&mut self, name: String) -> bool;
+
     fn waiting_services(&self) -> HashMap<String, f64>;
 
     fn all_services(&self) -> HashMap<String, f64>;
+
+    fn is_waiting(&self) -> bool;
 
     fn is_accepted(&self) -> bool;
 

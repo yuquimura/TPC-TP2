@@ -79,6 +79,11 @@ impl TransactionManager {
         if !self.prepare() {
             self.abort();
         } else {
+            // let mut is_commited = false;
+            // while !is_commited {
+            //     is_commited = self.commit();
+            //     println!("IS COMMITED: {}", is_commited);
+            // }
             self.commit();
         }
     }
@@ -109,10 +114,10 @@ impl TransactionManager {
         }
         self.send_messages(TransactionCode::Prepare, transaction_id, waiting_services);
         let res = self.wait_update(|opt_transaction| {
-            !opt_transaction
+            opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
-                .is_accepted()
+                .is_waiting()
         });
         res.is_ok()
     }
@@ -155,7 +160,7 @@ impl TransactionManager {
                 .as_ref()
                 .expect("[Transaction Manager] La transaccion actual deberia exitir");
             transaction_id = transaction.get_id();
-            all_services = transaction.all_services();
+            all_services = transaction.all_services(); // TODO : Cambiar por accepted_services() a implementar
         }
         self.send_messages(TransactionCode::Commit, transaction_id, all_services);
         let res = self.wait_update(|opt_transaction| {
@@ -389,6 +394,9 @@ mod tests {
         let accept_msg = TransactionResponse::build(TransactionCode::Accept, transaction_id);
         let mut accept_msg_clone;
 
+        let commit_msg = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+        let mut commit_msg_clone;
+
         let commit_messages = [
             TransactionRequest::build(TransactionCode::Commit, transaction_id, airline_fee),
             TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee),
@@ -437,6 +445,33 @@ mod tests {
             .times(n_services)
             .returning(|_, _| Ok(()));
         
+        commit_msg_clone = commit_msg.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((commit_msg_clone.clone(), airline_addr.to_string())
+            ));
+        
+        commit_msg_clone = commit_msg.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((commit_msg_clone.clone(), hotel_addr.to_string())
+            ));
+        
+        commit_msg_clone = commit_msg.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((commit_msg_clone.clone(), bank_addr.to_string())
+            ));   
+
         mock_receiver
             .expect_recv()
             .returning(move |_| 
