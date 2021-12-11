@@ -1,35 +1,82 @@
-
+use crate::std_loom::{thread, thread::JoinHandle};
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::candidates::election_message::ElectionMessage;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
+use crate::candidates::election_code::ElectionCode;
+use crate::alglobo::transaction::Transaction;
+use crate::alglobo::transaction_manager::TransactionManager;
+use std::time::Duration;
+use crate::file_reader::file_iterator::FileIterator;
+
+
+
 
 #[allow(dead_code)]
 pub struct Leader{
     udp_receiver: Box<dyn UdpSocketReceiver>,
     udp_sender: Box<dyn UdpSocketSender>,
+    transaction_manager: TransactionManager,
+    possible_ports: Vec<String>,
 }
 
 impl Leader {
     #[must_use]
-    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender>)->Self{
+    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender>,
+        transaction_manager: TransactionManager, possible_ports: Vec<String>,)->Self{
         Leader{
             udp_receiver,
             udp_sender,
+            transaction_manager,
+            possible_ports,
         }
     }
 
-    pub fn recv(& mut self){
-        let result = self.udp_receiver.recv(ElectionMessage::size());
-        let (_message,_address) = match result{
-            Ok(value) => value,
-            Err(_err) => return 
-        };
-        let result_send = self.udp_sender.send_to(_message.as_slice(),&_address);
-        match result_send{
-            Ok(var) => var,
-            Err(_err) => {} 
-        };
+    pub fn recv(& mut self){   
+        self.udp_receiver.set_timeout(Some(Duration::from_millis(1000)));      
+        if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){
+            match response.0[0] {                 
+                b'v'=>{
+                    let message = ElectionMessage::build(ElectionCode::Alive);   
+                    let his_address = response.1.clone();                             
+                    let _ = self.udp_sender.send_to(message.as_slice(),&his_address);
+                }
+                b'e'=>{
+                    let his_address = response.1.clone();                     
+                    for port in self.possible_ports.iter(){
+                        let message = ElectionMessage::build(ElectionCode::Leader);
+                        let his_address_vect: Vec<&str> = his_address.split(':').collect();
+                        let address_to_send = his_address_vect[0].to_string() + port;   
+                        let _ = self.udp_sender.send_to(message.as_slice(),&address_to_send);
+                    }
+                    
+                }
+                _ => {
+                    println!("No hay mas casos");
+                }
+            }
+        }
 
+    }
+
+    pub fn send_transaction_to_manager(& mut self){
+        if let Ok(reader) = FileIterator::create("path"){
+            if let Some(transaction)= reader.next(){
+                self.transaction_manager.process(transaction);
+            }    
+        }  
+    }
+
+    pub fn start_leader(& mut self){
+        thread::spawn(move || {
+            loop{
+                self.recv();
+            }            
+        });
+        thread::spawn(move || {
+            loop{
+                self.send_transaction_to_manager();
+            }            
+        });
     }
 }
 
@@ -50,6 +97,7 @@ mod tests {
         let mut mock_sender = MockUdpSocketSender::new();
         let message = ElectionMessage::build(ElectionCode::Alive);
         let messages = [message.clone()];
+        //transaction_manager = TransactionManager::new(id: u64, udp_sender: Box<dyn UdpSocketSender>, udp_receiver: Box<dyn UdpSocketReceiver + Send>, services_addrs_str: &HashMap<&str, String>, timeout: Duration)
         mock_receiver
             .expect_recv()
             .withf(|n_bytes| n_bytes == &ElectionMessage::size())
@@ -62,8 +110,8 @@ mod tests {
             })
             .times(1)
             .returning(|_, _| Ok(()));
-        let mut leader = Leader::new(Box::new(mock_receiver),Box::new(mock_sender));
-        leader.recv();
+        //let mut leader = Leader::new(Box::new(mock_receiver),Box::new(mock_sender));
+        //leader.recv();
 
     }
 }

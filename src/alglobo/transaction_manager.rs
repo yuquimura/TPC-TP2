@@ -20,7 +20,7 @@ use super::{
 };
 
 #[allow(dead_code)]
-struct TransactionManager {
+pub struct TransactionManager {
     pub id: u64,
     udp_sender: Box<dyn UdpSocketSender>,
     services_addrs: HashMap<String, String>,

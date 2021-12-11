@@ -12,25 +12,31 @@ pub struct Candidate{
     udp_sender: Box<dyn UdpSocketSender>,
     my_port: String,
     possible_ports: Vec<String>,
-    leader_port: String
+    leader_port: String,
+    leader_address: String,
+    im_the_leader: bool,
 }
 
 impl Candidate {
     #[must_use]
     pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender>,
-        my_port: String, possible_ports: Vec<String>,leader_port: String)->Self{
+        my_port: String, possible_ports: Vec<String>,leader_port: String, 
+        leader_address: String)->Self{
+        let im_the_leader = false;
         Candidate{
             udp_receiver,
             udp_sender,
             my_port,
             possible_ports,
             leader_port,
+            leader_address,
+            im_the_leader
         }
     }
 
-    pub fn send_to(& mut self,addr: &str){
+    pub fn send_to(& mut self){
         let message = ElectionMessage::build(ElectionCode::Alive);        
-        let _ = self.udp_sender.send_to(message.as_slice(),addr);
+        let _ = self.udp_sender.send_to(message.as_slice(),&self.leader_address);
         self.udp_receiver.set_timeout(Some(Duration::from_millis(1000)));        
         if let Ok(value) = self.udp_receiver.recv(ElectionMessage::size()) {
             match value.0[0] {                 
@@ -39,8 +45,8 @@ impl Candidate {
                     if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){                      
                         let his_address = response.1;                             
                         let _ = self.udp_sender.send_to(message.as_slice(),&his_address);              
-                        let im_the_leader =  self.start_election(&his_address);
-                        if im_the_leader{
+                        self.im_the_leader =  self.start_election(&his_address);
+                        if self.im_the_leader{
                             //soy el lider
                             self.communicate_new_leader(his_address)
                         }
@@ -50,24 +56,33 @@ impl Candidate {
                 b'e' => {  
                     let his_address = value.1;                             
                     let _ = self.udp_sender.send_to(message.as_slice(),&his_address);
-                    let im_the_leader =  self.start_election(&his_address);
+                    self.im_the_leader =  self.start_election(&his_address);
                     self.start_election(&his_address);
-                    if im_the_leader{
+                    if self.im_the_leader{
                         //soy el lider
                         self.communicate_new_leader(his_address);
                     }
                     else{
-                        self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
-                        if let Ok(_response) = self.udp_receiver.recv(ElectionMessage::size()){
-                            let his_port_vect: Vec<&str> = his_address.split(':').collect();
-                            self.leader_port = his_port_vect[1].to_string();
+                        loop{
+                            self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
+                            if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){
+                                if response.0[0] == b'l'{
+                                    let his_port_vect: Vec<&str> = response.1.split(':').collect();
+                                    self.leader_port = his_port_vect[1].to_string();
+                                    self.leader_address = response.1;
+                                }
+                                
                         }
+
+                        }
+                        
                     }
                     
                 }
                 b'l' => {
                     let his_port_vect: Vec<&str> = value.1.split(':').collect();
                     self.leader_port = his_port_vect[1].to_string();
+                    self.leader_address = value.1;
                 }
                 _ => {
                     println!("No hay mas casos");
@@ -75,18 +90,25 @@ impl Candidate {
             }  
             
         } else {
-            let im_the_leader =  self.start_election(&addr.to_string());
-            if im_the_leader{
+            self.im_the_leader =  self.start_election(&self.leader_address.to_string());
+            if self.im_the_leader{
                 //soy el lider
-                self.communicate_new_leader(addr.parse().unwrap());
+                self.communicate_new_leader(self.leader_address.parse().unwrap());
 
             }
             else{
-                self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
-                if let Ok(_response) = self.udp_receiver.recv(ElectionMessage::size()){
-                    let his_port_vect: Vec<&str> = addr.split(':').collect();
-                    self.leader_port = his_port_vect[1].to_string();
+                loop{
+                    self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
+                    if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){
+                        if response.0[0] == b'l'{
+                            let his_port_vect: Vec<&str> = response.1.split(':').collect();
+                            self.leader_port = his_port_vect[1].to_string();
+                            self.leader_address = response.1;
+
+                        } 
+                    }
                 }
+                
             }
         }
     }
@@ -116,6 +138,22 @@ impl Candidate {
             let adr_to_send = his_adr_vect[0].to_string() + port;
             let _ = self.udp_sender.send_to(message.as_slice(), &adr_to_send);
         }
+    }
+
+    fn start_candidate(&mut self,){
+        thread::spawn(move || {
+            loop{
+                self.send_to();
+                if self.im_the_leader{
+                    break
+                }
+            }            
+        });
+        thread::spawn(move || {
+            loop{
+                self.send_transaction_to_manager();
+            }            
+        });
     }
 }
 

@@ -11,3 +11,6 @@ rand = "0.8.4"
 [dev-dependencies]
 mockall = "0.10.2"
 ntest = "0.7.3"
+
+[target.'cfg(loom)'.dependencies]
+loom = "0.5.2"
