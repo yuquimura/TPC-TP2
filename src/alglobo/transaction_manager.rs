@@ -53,6 +53,12 @@ impl TransactionManager {
         );
 
         thread::spawn(move || {
+            // let mut rounds = 3;
+            // while rounds > 0 {
+            //     receiver.recv()
+            //         .expect("[Transaction Receiver] Algo salio mal");
+            //     rounds -= 1;
+            // }
             loop {
                 receiver.recv()
                     .expect("[Transaction Receiver] Algo salio mal");
@@ -72,6 +78,8 @@ impl TransactionManager {
         self.update_current(transaction);
         if !self.prepare() {
             self.abort();
+        } else {
+            self.commit();
         }
     }
 
@@ -134,6 +142,31 @@ impl TransactionManager {
         res.is_ok()
     }
 
+    fn commit(&mut self) -> bool {
+        let transaction_id;
+        let all_services;
+        {
+            let opt_transaction = self
+                .curr_transaction
+                .0
+                .lock()
+                .expect("[Transaction Manager] Lock de transaccion envenenado");
+            let transaction = opt_transaction
+                .as_ref()
+                .expect("[Transaction Manager] La transaccion actual deberia exitir");
+            transaction_id = transaction.get_id();
+            all_services = transaction.all_services();
+        }
+        self.send_messages(TransactionCode::Commit, transaction_id, all_services);
+        let res = self.wait_update(|opt_transaction| {
+            !opt_transaction
+                .as_ref()
+                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
+                .is_commited()
+        });
+        res.is_ok()
+    }
+
     fn wait_update(
         &self,
         condition: fn(&mut Option<Box<dyn Transactionable + Send>>) -> bool,
@@ -180,9 +213,9 @@ mod tests {
         services::service_name::ServiceName, 
         sockets::{
             udp_socket_sender::MockUdpSocketSender,
-            udp_socket_receiver::MockUdpSocketReceiver
+            udp_socket_receiver::MockUdpSocketReceiver, socket_error::SocketError
         },
-        // transactions::transaction_response::TransactionResponse
+        transactions::transaction_response::TransactionResponse
     };
 
     use std::collections::HashMap;
@@ -235,6 +268,12 @@ mod tests {
             .withf(move |_, _| true)
             .times(waiting_services.len())
             .returning(|_, _| Ok(()));
+
+        // mock_receiver
+        //     .expect_recv()
+        //     .returning(move |_| 
+        //         Err(SocketError::Timeout)
+        //     );
 
         let mut manager = TransactionManager::new(
             0,
@@ -300,6 +339,12 @@ mod tests {
             .times(waiting_services.len())
             .returning(|_, _| Ok(()));
 
+        // mock_receiver
+        //     .expect_recv()
+        //     .returning(move |_| 
+        //         Err(SocketError::Timeout)
+        //     );
+
         let mut manager = TransactionManager::new(
             0,
             Box::new(mock_sender),
@@ -315,89 +360,101 @@ mod tests {
         manager.process(transaction);
     }
 
-    // #[test]
-    // fn process_transaction_should_send_msg_commit_to_all_services_if_all_services_responded_with_accept_msg(
-    // ) {
-    //     let airline_addr = "127.0.0.1:49156";
-    //     let hotel_addr = "127.0.0.1:49157";
-    //     let bank_addr = "127.0.0.1:49158";
-    //     let addresses = [airline_addr, hotel_addr, bank_addr];
+    #[test]
+    fn process_transaction_should_send_msg_commit_to_all_services_if_all_services_responded_with_accept_msg(
+    ) {
+        let airline_addr = "127.0.0.1:49156";
+        let hotel_addr = "127.0.0.1:49157";
+        let bank_addr = "127.0.0.1:49158";
+        let addresses = [airline_addr, hotel_addr, bank_addr];
 
-    //     let transaction_id = 1;
-    //     let airline_fee = 100.0;
-    //     let hotel_fee = 200.0;
-    //     let bank_fee = 300.0;
-    //     let transaction = Transaction::new(
-    //         transaction_id,
-    //         HashMap::from([
-    //             (ServiceName::airline(), airline_fee),
-    //             (ServiceName::hotel(), hotel_fee),
-    //             (ServiceName::bank(), bank_fee),
-    //         ]),
-    //     );
+        let transaction_id = 1;
+        let airline_fee = 100.0;
+        let hotel_fee = 200.0;
+        let bank_fee = 300.0;
+        let transaction = Transaction::new(
+            transaction_id,
+            HashMap::from([
+                (ServiceName::airline(), airline_fee),
+                (ServiceName::hotel(), hotel_fee),
+                (ServiceName::bank(), bank_fee),
+            ]),
+        );
 
-    //     let n_services = transaction.waiting_services().len();
+        let n_services = transaction.waiting_services().len();
 
-    //     let mut mock_sender = MockUdpSocketSender::new();
-    //     let mut mock_receiver = MockUdpSocketReceiver::new();
+        let mut mock_sender = MockUdpSocketSender::new();
+        let mut mock_receiver = MockUdpSocketReceiver::new();
         
-    //     let accept_msg = TransactionResponse::build(TransactionCode::Accept, transaction_id);
-    //     let accept_msg_clone = accept_msg.clone();
+        let accept_msg = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        let mut accept_msg_clone;
 
-    //     let commit_messages = [
-    //         TransactionRequest::build(TransactionCode::Commit, transaction_id, airline_fee),
-    //         TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee),
-    //         TransactionRequest::build(TransactionCode::Commit, transaction_id, bank_fee),
-    //     ];
+        let commit_messages = [
+            TransactionRequest::build(TransactionCode::Commit, transaction_id, airline_fee),
+            TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee),
+            TransactionRequest::build(TransactionCode::Commit, transaction_id, bank_fee),
+        ];
 
-    //     mock_sender
-    //         .expect_send_to()
-    //         .withf(move |_, _| true)
-    //         .times(n_services)
-    //         .returning(|_, _| Ok(()));
+        mock_sender
+            .expect_send_to()
+            .withf(move |_, _| true)
+            .times(n_services)
+            .returning(|_, _| Ok(()));
 
-    //     mock_receiver
-    //         .expect_recv()
-    //         .withf(move |_| true)
-    //         .returning(|_| 
-    //             Ok((accept_msg_clone, airline_addr.to_string())
-    //         ));
+        accept_msg_clone = accept_msg.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((accept_msg_clone.clone(), airline_addr.to_string())
+            ));
         
-    //     mock_receiver
-    //         .expect_recv()
-    //         .withf(move |_| true)
-    //         .returning(|_| 
-    //             Ok((accept_msg_clone, hotel_addr.to_string())
-    //         ));
+        accept_msg_clone = accept_msg.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((accept_msg_clone.clone(), hotel_addr.to_string())
+            ));
         
-    //     mock_receiver
-    //         .expect_recv()
-    //         .withf(move |_| true)
-    //         .returning(|_| 
-    //             Ok((accept_msg_clone, bank_addr.to_string())
-    //         ));   
+        accept_msg_clone = accept_msg.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((accept_msg_clone.clone(), bank_addr.to_string())
+            ));   
 
-    //     mock_sender
-    //         .expect_send_to()
-    //         .withf(move |buf, addr| 
-    //             commit_messages.contains(&buf.to_vec()) &&
-    //             addresses.contains(&addr)
-    //         )
-    //         .times(n_services)
-    //         .returning(|_, _| Ok(()));
+        mock_sender
+            .expect_send_to()
+            .withf(move |buf, addr| 
+                commit_messages.contains(&buf.to_vec()) &&
+                addresses.contains(&addr)
+            )
+            .times(n_services)
+            .returning(|_, _| Ok(()));
+        
+        mock_receiver
+            .expect_recv()
+            .returning(move |_| 
+                Err(SocketError::Timeout)
+            );
 
-    //     let mut manager = TransactionManager::new(
-    //         0,
-    //         Box::new(mock_sender),
-    //         Box::new(mock_receiver),
-    //         &HashMap::from([
-    //             (ServiceName::airline(), airline_addr),
-    //             (ServiceName::hotel(), hotel_addr),
-    //             (ServiceName::bank(), bank_addr),
-    //         ]),
-    //         Duration::from_secs(0),
-    //     );
+        let mut manager = TransactionManager::new(
+            0,
+            Box::new(mock_sender),
+            Box::new(mock_receiver),
+            &HashMap::from([
+                (airline_addr, ServiceName::airline()),
+                (hotel_addr, ServiceName::hotel()),
+                (bank_addr, ServiceName::bank()),
+            ]),
+            Duration::from_secs(1),
+        );
 
-    //     manager.process(transaction);
-    // }
+        manager.process(transaction);
+    }
 }

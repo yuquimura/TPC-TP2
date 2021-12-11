@@ -5,6 +5,7 @@ pub enum TransactionState {
     Waiting,
     Accepted,
     Aborted,
+    Commited
 }
 
 impl fmt::Display for TransactionState {
@@ -13,6 +14,7 @@ impl fmt::Display for TransactionState {
             TransactionState::Waiting => write!(f, "EN ESPERA"),
             TransactionState::Accepted => write!(f, "ACEPTADOS"),
             TransactionState::Aborted => write!(f, "ABORTADOS"),
+            TransactionState::Commited => write!(f, "COMMITEADOS"),
         }
     }
 }

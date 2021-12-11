@@ -18,4 +18,6 @@ pub trait Transactionable {
     fn is_accepted(&self) -> bool;
 
     fn is_aborted(&self) -> bool;
+
+    fn is_commited(&self) -> bool;
 }

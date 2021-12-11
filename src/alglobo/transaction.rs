@@ -17,6 +17,7 @@ impl Transaction {
             (TransactionState::Waiting, services_names),
             (TransactionState::Accepted, HashSet::new()),
             (TransactionState::Aborted, HashSet::new()),
+            (TransactionState::Commited, HashSet::new()),
         ]);
         Transaction {
             id,
@@ -97,6 +98,10 @@ impl Transactionable for Transaction {
 
     fn is_aborted(&self) -> bool {
         self.is_state(TransactionState::Aborted)
+    }
+
+    fn is_commited(&self) -> bool {
+        self.is_state(TransactionState::Commited)
     }
 }
 
