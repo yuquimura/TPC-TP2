@@ -34,6 +34,13 @@ impl Hotel {
 
 impl CommonClient for Hotel {
     fn answer_message(&mut self, vector: Vec<u8>) {
+        /*let mut rng = rand::thread_rng();
+        if rng > 0.2{
+            let response = TransactionResponse::build(TransactionCode::Abort,
+                                                      transaction_id);
+            let addr = self.addr.clone();
+            let _ =self.socket_sender.send_to(&*response, &addr);
+        }*/
         let code= vector[0];
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare){
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>()+1]
