@@ -141,19 +141,19 @@ impl Candidate {
     }
 
     fn start_candidate(&mut self,){
-        thread::spawn(move || {
-            loop{
-                self.send_to();
-                if self.im_the_leader{
-                    break
-                }
-            }            
-        });
-        thread::spawn(move || {
-            loop{
-                self.send_transaction_to_manager();
-            }            
-        });
+        // thread::spawn(move || {
+        //     loop{
+        //         self.send_to();
+        //         if self.im_the_leader{
+        //             break
+        //         }
+        //     }            
+        // });
+        // thread::spawn(move || {
+        //     loop{
+        //         self.send_transaction_to_manager();
+        //     }            
+        // });
     }
 }
 

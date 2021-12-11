@@ -6,24 +6,23 @@ use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::candidates::election_message::ElectionMessage;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 use crate::candidates::election_code::ElectionCode;
-use crate::alglobo::transaction::Transaction;
-use crate::alglobo::transaction_manager::TransactionManager;
 use std::time::Duration;
 use crate::file_reader::file_iterator::FileIterator;
-
-
+use crate::alglobo::transaction_manager::TransactionManager;
 
 
 #[allow(dead_code)]
 pub struct Leader{
-    udp_receiver: Box<dyn UdpSocketReceiver>,
+    udp_receiver: Box<dyn UdpSocketReceiver + Send>,
     udp_sender: Box<dyn UdpSocketSender + Send>,
     possible_ports: Vec<String>,
 }
 
 impl Leader {
     #[must_use]
-    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender + Send>,
+    pub fn new(
+        udp_receiver: Box<dyn UdpSocketReceiver + Send>,
+        udp_sender: Box<dyn UdpSocketSender + Send>,
         possible_ports: Vec<String>,)->Self{
         Leader{
             udp_receiver,
@@ -59,11 +58,12 @@ impl Leader {
 
     }
 
-    pub fn start_leader(& mut self, transaction_manager: TransactionManager){ 
+    pub fn start_leader(& mut self, mut transaction_manager: TransactionManager){ 
         let boolean = false;
         let lock = Arc::new(RwLock::new(boolean));  
+        let lock_clone = lock.clone();
         let join_handle = thread::spawn(move || {
-            if let Ok(reader) = FileIterator::new("path"){
+            if let Ok(mut reader) = FileIterator::new("path"){
                 while !reader.ended(){
                     if let Some(transaction)= reader.next(){
                         transaction_manager.process(transaction);
@@ -71,7 +71,7 @@ impl Leader {
                 }
                    
             }
-            let result = lock.write().expect("El lock esta envenenado");
+            let mut result = lock_clone.write().expect("El lock esta envenenado");
             *result = true;            
         });   
         loop{
@@ -81,7 +81,7 @@ impl Leader {
                 break
             }
         } 
-        join_handle.join();
+        let _ = join_handle.join();
     }
 }
 
