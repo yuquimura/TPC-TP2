@@ -94,15 +94,17 @@ mod tests {
         sockets::udp_socket_sender::MockUdpSocketSender,
         candidates::election_code::ElectionCode,
     };
+    use crate::candidates::candidate::Candidate;
 
-    #[test]
+    /*#[test]
     fn it_should_receive_alive_message(){
         let address = "127.0.0.1:49156";
         let mut mock_receiver = MockUdpSocketReceiver::new();
         let mut mock_sender = MockUdpSocketSender::new();
+        let mut mock_receiver_candidate = MockUdpSocketReceiver::new();
+        let mut mock_sender_leader = MockUdpSocketSender::new();
         let message = ElectionMessage::build(ElectionCode::Alive);
         let messages = [message.clone()];
-        //transaction_manager = TransactionManager::new(id: u64, udp_sender: Box<dyn UdpSocketSender>, udp_receiver: Box<dyn UdpSocketReceiver + Send>, services_addrs_str: &HashMap<&str, String>, timeout: Duration)
         mock_receiver
             .expect_recv()
             .withf(|n_bytes| n_bytes == &ElectionMessage::size())
@@ -115,8 +117,13 @@ mod tests {
             })
             .times(1)
             .returning(|_, _| Ok(()));
-        //let mut leader = Leader::new(Box::new(mock_receiver),Box::new(mock_sender));
-        //leader.recv();
+        let leader = Leader::new(Box::new(mock_receiver), Box::new(mock_sender_leader),vec!["".to_string()]);
+        let mut candidate = Candidate::new(Box::new(mock_receiver_candidate),
+                                           Box::new(mock_sender),
+                                           "49156".to_string(),
+                                           vec!["".to_string()],
+                                           "49156".to_string(), address.to_string());
+        candidate.send_to();
 
-    }
+    }*/
 }
