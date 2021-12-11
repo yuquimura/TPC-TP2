@@ -1,6 +1,6 @@
 use std::io::prelude::*;
 use std::iter::Iterator;
-use std::sync::mpsc::Sender;
+
 use std::{fs::File, io::BufReader};
 use std::collections::HashMap;
 
@@ -61,7 +61,7 @@ impl Iterator for FileIterator {
 
         
 
-        return Some(Transaction::new(params[0].parse::<u64>().unwrap(), services_info));
+        Some(Transaction::new(params[0].parse::<u64>().unwrap(), services_info))
 
     }
 }

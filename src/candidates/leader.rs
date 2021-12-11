@@ -27,7 +27,7 @@ impl Leader {
         let result_send = self.udp_sender.send_to(_message.as_slice(),&_address);
         match result_send{
             Ok(var) => var,
-            Err(_err) => return 
+            Err(_err) => {} 
         };
 
     }

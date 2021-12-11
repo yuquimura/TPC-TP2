@@ -89,7 +89,7 @@ impl CommonClient for Bank {
                 self.answer_message(res_vec);
             }
         }
-        return 0;
+        0
     }
 
 
@@ -99,7 +99,7 @@ impl CommonClient for Bank {
             .recv(TransactionRequest::size());
         let res_vec = res.unwrap().0;
         self.answer_message(res_vec);
-        return Ok(0);
+        Ok(0)
 
     }
 

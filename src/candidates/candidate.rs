@@ -43,7 +43,7 @@ impl Candidate {
                         for port in self.possible_ports.iter(){
                             if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap(){                                
                                 let message = ElectionMessage::build(ElectionCode::Election);  
-                                let his_address_vect: Vec<&str> = his_address.split(":").collect();
+                                let his_address_vect: Vec<&str> = his_address.split(':').collect();
                                 let address_to_send = his_address_vect[0].to_string() + port;                          
                                 let _ = self.udp_sender.send_to(message.as_slice(),&address_to_send);
                                 self.udp_receiver.set_timeout(Some(Duration::from_millis(1000)));
@@ -59,7 +59,7 @@ impl Candidate {
                             //soy el lider
                             for port in self.possible_ports.iter(){
                                 let message = ElectionMessage::build(ElectionCode::Leader);  
-                                let his_adr_vect: Vec<&str> = his_address.split(":").collect();
+                                let his_adr_vect: Vec<&str> = his_address.split(':').collect();
                                 let adr_to_send = his_adr_vect[0].to_string() + port;                          
                                 let _ = self.udp_sender.send_to(message.as_slice(),&adr_to_send);
     
@@ -78,7 +78,7 @@ impl Candidate {
                     for port in self.possible_ports.iter(){
                         if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap(){                                
                             let message = ElectionMessage::build(ElectionCode::Election);  
-                            let his_address_vect: Vec<&str> = his_address.split(":").collect();
+                            let his_address_vect: Vec<&str> = his_address.split(':').collect();
                             let address_to_send = his_address_vect[0].to_string() + port;                          
                             let _ = self.udp_sender.send_to(message.as_slice(),&address_to_send);
                             self.udp_receiver.set_timeout(Some(Duration::from_millis(1)));
@@ -94,7 +94,7 @@ impl Candidate {
                         //soy el lider
                         for port in self.possible_ports.iter(){
                             let message = ElectionMessage::build(ElectionCode::Leader);  
-                            let his_port_vect: Vec<&str> = his_address.split(":").collect();
+                            let his_port_vect: Vec<&str> = his_address.split(':').collect();
                             let his_port = his_port_vect[0].to_string() + port;                          
                             let _ = self.udp_sender.send_to(message.as_slice(),&his_port);
 
@@ -104,14 +104,14 @@ impl Candidate {
                     else{
                         self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
                         if let Ok(_response) = self.udp_receiver.recv(ElectionMessage::size()){
-                            let his_port_vect: Vec<&str> = his_address.split(":").collect();
+                            let his_port_vect: Vec<&str> = his_address.split(':').collect();
                             self.leader_port = his_port_vect[1].to_string();
                         }
                     }
                     
                 }
                 b'l' => {
-                    let his_port_vect: Vec<&str> = value.1.split(":").collect();
+                    let his_port_vect: Vec<&str> = value.1.split(':').collect();
                     self.leader_port = his_port_vect[1].to_string();
                 }
                 _ => {
@@ -124,7 +124,7 @@ impl Candidate {
             for port in self.possible_ports.iter(){
                 if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap(){                                
                     let message = ElectionMessage::build(ElectionCode::Election);  
-                    let his_address_vect: Vec<&str> = addr.split(":").collect();
+                    let his_address_vect: Vec<&str> = addr.split(':').collect();
                     let address_to_send = his_address_vect[0].to_string() + port;                          
                     let _ = self.udp_sender.send_to(message.as_slice(),&address_to_send);
                     self.udp_receiver.set_timeout(Some(Duration::from_millis(1)));
@@ -140,7 +140,7 @@ impl Candidate {
                 //soy el lider
                 for port in self.possible_ports.iter(){
                     let message = ElectionMessage::build(ElectionCode::Leader);  
-                    let his_port_vect: Vec<&str> = addr.split(":").collect();
+                    let his_port_vect: Vec<&str> = addr.split(':').collect();
                     let his_port = his_port_vect[0].to_string() + port;                          
                     let _ = self.udp_sender.send_to(message.as_slice(),&his_port);
 
@@ -150,7 +150,7 @@ impl Candidate {
             else{
                 self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
                 if let Ok(_response) = self.udp_receiver.recv(ElectionMessage::size()){
-                    let his_port_vect: Vec<&str> = addr.split(":").collect();
+                    let his_port_vect: Vec<&str> = addr.split(':').collect();
                     self.leader_port = his_port_vect[1].to_string();
                 }
             }
