@@ -16,7 +16,7 @@ impl FileIterator {
     /// Funcion destinada a crear una instancia de FileIterator
     /// PRE: la variable path hace referencia a un archivo. La funcion devolvera Err si no se
     /// encuentra al archivo
-    pub fn create(
+    pub fn new(
         path: &str
     ) -> Result<FileIterator, String> {
         if let Ok(file) = File::open(path) {

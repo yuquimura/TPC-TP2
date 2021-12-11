@@ -22,7 +22,7 @@ use super::{
 #[allow(dead_code)]
 pub struct TransactionManager {
     pub id: u64,
-    udp_sender: Box<dyn UdpSocketSender>,
+    udp_sender: Box<dyn UdpSocketSender + Send>,
     services_addrs: HashMap<String, String>,
     curr_transaction: CurrentTransaction,
     timeout: Duration,
@@ -32,7 +32,7 @@ pub struct TransactionManager {
 impl TransactionManager {
     pub fn new(
         id: u64,
-        udp_sender: Box<dyn UdpSocketSender>,
+        udp_sender: Box<dyn UdpSocketSender + Send>,
         udp_receiver: Box<dyn UdpSocketReceiver + Send>,
         services_addrs_str: &HashMap<&str, String>, // Voltear => (addr, name)
         timeout: Duration,

@@ -1,4 +1,7 @@
-use crate::std_loom::{thread, thread::JoinHandle};
+use std::thread;
+use std::thread::JoinHandle;
+use std::sync::RwLock;
+use std::sync::Arc;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::candidates::election_message::ElectionMessage;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
@@ -14,19 +17,17 @@ use crate::file_reader::file_iterator::FileIterator;
 #[allow(dead_code)]
 pub struct Leader{
     udp_receiver: Box<dyn UdpSocketReceiver>,
-    udp_sender: Box<dyn UdpSocketSender>,
-    transaction_manager: TransactionManager,
+    udp_sender: Box<dyn UdpSocketSender + Send>,
     possible_ports: Vec<String>,
 }
 
 impl Leader {
     #[must_use]
-    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender>,
-        transaction_manager: TransactionManager, possible_ports: Vec<String>,)->Self{
+    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender + Send>,
+        possible_ports: Vec<String>,)->Self{
         Leader{
             udp_receiver,
             udp_sender,
-            transaction_manager,
             possible_ports,
         }
     }
@@ -58,25 +59,29 @@ impl Leader {
 
     }
 
-    pub fn send_transaction_to_manager(& mut self){
-        if let Ok(reader) = FileIterator::create("path"){
-            if let Some(transaction)= reader.next(){
-                self.transaction_manager.process(transaction);
-            }    
-        }  
-    }
-
-    pub fn start_leader(& mut self){
-        thread::spawn(move || {
-            loop{
-                self.recv();
-            }            
-        });
-        thread::spawn(move || {
-            loop{
-                self.send_transaction_to_manager();
-            }            
-        });
+    pub fn start_leader(& mut self, transaction_manager: TransactionManager){ 
+        let boolean = false;
+        let lock = Arc::new(RwLock::new(boolean));  
+        let join_handle = thread::spawn(move || {
+            if let Ok(reader) = FileIterator::new("path"){
+                while !reader.ended(){
+                    if let Some(transaction)= reader.next(){
+                        transaction_manager.process(transaction);
+                    } 
+                }
+                   
+            }
+            let result = lock.write().expect("El lock esta envenenado");
+            *result = true;            
+        });   
+        loop{
+            self.recv();
+            let result_read = lock.read().expect("El lock esta envenenado");
+            if *result_read{
+                break
+            }
+        } 
+        join_handle.join();
     }
 }
 
