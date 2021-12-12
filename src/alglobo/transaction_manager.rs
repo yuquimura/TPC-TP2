@@ -108,7 +108,7 @@ impl TransactionManager {
             opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
-                .is_waiting()
+                .is_any_waiting()
         });
         res.is_ok()
     }
