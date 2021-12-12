@@ -80,14 +80,23 @@ impl Transactionable for Transaction {
     }
 
     fn abort(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
+        let mut is_valid = false;
         {
             let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
-            if !waiting_services.remove(&name) {
-                return false;
+            if waiting_services.remove(&name) {
+                is_valid = true;
             }
         }
-        self.update_state(name, TransactionState::Aborted);
-        true
+        {
+            let accepted_services = self.get_mut_state_services(&TransactionState::Accepted);
+            if accepted_services.remove(&name) {
+                is_valid = true;
+            }
+        }
+        if is_valid {
+            self.update_state(name, TransactionState::Aborted);
+        }
+        is_valid
     }
 
     fn commit(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
@@ -205,28 +214,28 @@ mod tests {
         assert_eq!(transaction.get_id(), new_id);
     }
 
-//     #[test]
-//     fn it_should_be_able_to_force_accept() {
-//         let id = 0;
-//         let airline = (ServiceName::Airline.string_name(), 100.0);
-//         let hotel = (ServiceName::Hotel.string_name(), 200.0);
-//         let bank = (ServiceName::Bank.string_name(), 300.0);
-//         let services = [airline, bank, hotel];
-//         let mut transaction = Transaction::new(id, HashMap::from(services));
+    // #[test]
+    // fn it_should_be_able_to_force_accept() {
+    //     let id = 0;
+    //     let airline = (ServiceName::Airline.string_name(), 100.0);
+    //     let hotel = (ServiceName::Hotel.string_name(), 200.0);
+    //     let bank = (ServiceName::Bank.string_name(), 300.0);
+    //     let services = [airline, bank, hotel];
+    //     let mut transaction = Transaction::new(id, HashMap::from(services));
 
-//         let new_airline_fee = 200.0;
-//         let new_hotel_fee = 300.0;
-//         let new_bank_fee = 500.0;
+    //     let new_airline_fee = 200.0;
+    //     let new_hotel_fee = 300.0;
+    //     let new_bank_fee = 500.0;
 
-//         transaction.accept(ServiceName::Airline.string_name(), Some(new_airline_fee));
-//         transaction.accept(ServiceName::Hotel.string_name(), Some(new_hotel_fee));
-//         transaction.accept(ServiceName::Bank.string_name(), Some(new_bank_fee));
+    //     transaction.accept(ServiceName::Airline.string_name(), Some(new_airline_fee));
+    //     transaction.accept(ServiceName::Hotel.string_name(), Some(new_hotel_fee));
+    //     transaction.accept(ServiceName::Bank.string_name(), Some(new_bank_fee));
 
-//         let all_services = transaction.all_services();
-//         assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
-//         assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
-//         assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
+    //     let all_services = transaction.all_services();
+    //     assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
+    //     assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
+    //     assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
 
-//         let 
-//     }
+    //     assert!(transaction.is_accepted());
+    // }
 }
