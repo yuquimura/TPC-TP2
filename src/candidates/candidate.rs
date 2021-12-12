@@ -1,9 +1,14 @@
-
+use std::thread;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::candidates::election_message::ElectionMessage;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 use crate::candidates::election_code::ElectionCode;
 use std::time::Duration;
+use rand::Rng;
+use crate::alglobo::transaction_manager::TransactionManager;
+use crate::candidates::constants::{DEFAULT_IP, EMPTY, VEC_PORT_DATA, VEC_PORT_INFO};
+use crate::candidates::leader::Leader;
+use crate::sockets::udp_socket_wrap::UdpSocketWrap;
 
 
 #[allow(dead_code)]
@@ -15,11 +20,14 @@ pub struct Candidate{
     leader_port: String,
     leader_address: String,
     im_the_leader: bool,
+    udp_receiver_info: Box<dyn UdpSocketReceiver>,
+    udp_sender_info: Box<dyn UdpSocketSender>,
 }
 
 impl Candidate {
     #[must_use]
     pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender>,
+               udp_receiver_info: Box<dyn UdpSocketReceiver>,udp_sender_info: Box<dyn UdpSocketSender>,
         my_port: String, possible_ports: Vec<String>,leader_port: String, 
         leader_address: String)->Self{
         let im_the_leader = false;
@@ -30,11 +38,17 @@ impl Candidate {
             possible_ports,
             leader_port,
             leader_address,
-            im_the_leader
+            im_the_leader,
+            udp_sender_info,
+            udp_receiver_info
         }
     }
 
     pub fn send_to(& mut self){
+        if self.leader_port == EMPTY {
+            self.start_election(&DEFAULT_IP.to_string());
+            return;
+        }
         let message = ElectionMessage::build(ElectionCode::Alive);        
         let _ = self.udp_sender.send_to(message.as_slice(),&self.leader_address);
         self.udp_receiver.set_timeout(Some(Duration::from_millis(1000)));        
@@ -141,19 +155,44 @@ impl Candidate {
     }
 
     fn start_candidate(&mut self,){
-        // thread::spawn(move || {
-        //     loop{
-        //         self.send_to();
-        //         if self.im_the_leader{
-        //             break
-        //         }
-        //     }            
-        // });
-        // thread::spawn(move || {
-        //     loop{
-        //         self.send_transaction_to_manager();
-        //     }            
-        // });
+        loop {
+            self.send_to();
+            if self.im_the_leader {
+                break;
+            }
+        }
+        for port in VEC_PORT_DATA {
+            let socket_data_recv = UdpSocketWrap::new_with_addr(None, port);
+            if let Ok(result_socket_recv) = socket_data_recv {
+                let socket_cloned_result = result_socket_recv.try_clone();
+                if let Ok(socket_data_clone) = socket_cloned_result {
+                    break;
+                }
+            }
+        }
+        for port in VEC_PORT_INFO {
+            let socket_info_recv = UdpSocketWrap::new_with_addr(None, port);
+            if let Ok(result_socket_recv) = socket_info_recv {
+                let socket_info_cloned_result = result_socket_recv.try_clone();
+                if let Ok(socket_info_clone) = socket_info_cloned_result {
+                    break;
+                }
+            }
+        }
+        /*
+        let mut leader = Leader::new(Box::new(socket_wrap_recv), Box::new(socket_wrap_send), vect_port);
+
+        let transaction_manager = TransactionManager::new(0,)
+        leader.start_leader();
+*/
+
+
+        thread::spawn(move || {
+            loop{
+                //transaction receiver.recv
+
+            }
+        });
     }
 }
 
