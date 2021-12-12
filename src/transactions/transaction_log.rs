@@ -86,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    fn size_return_the_len_of_result_vec() {
+    fn size_should_be_the_len_of_result_of_build() {
 
         let id = 4000;
         let airline_state = TransactionState::Waiting;

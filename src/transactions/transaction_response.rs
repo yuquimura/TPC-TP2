@@ -73,7 +73,7 @@ mod tests {
     }
 
     #[test]
-    fn size_should_be_the_result_of_build() {
+    fn size_should_be_the_len_of_result_of_build() {
         let id = 0;
         let message = TransactionResponse::build(TransactionCode::Accept, id);
         assert_eq!(TransactionResponse::size(), message.len());
