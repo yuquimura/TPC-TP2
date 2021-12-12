@@ -83,7 +83,7 @@ impl Transactionable for Transaction {
     }
 
     fn accept(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let mut is_valid = false;
+        let is_valid ;
         if let Some(fee) = opt_fee {
             let all_states = vec![
                 TransactionState::Waiting,
@@ -108,7 +108,7 @@ impl Transactionable for Transaction {
     }
 
     fn abort(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let mut is_valid = false;
+        let is_valid;
         if let Some(fee) = opt_fee {
             let all_states = vec![
                 TransactionState::Waiting,
@@ -136,15 +136,29 @@ impl Transactionable for Transaction {
         is_valid
     }
 
-    fn commit(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
-        {
-            let accepted_services = self.get_mut_state_services(&TransactionState::Accepted);
-            if !accepted_services.remove(&name) {
-                return false;
-            }
+    fn commit(&mut self, name: String, opt_fee: Option<f64>) -> bool {
+        let is_valid;
+        if let Some(fee) = opt_fee {
+            let all_states = vec![
+                TransactionState::Waiting,
+                TransactionState::Accepted,
+                TransactionState::Aborted,
+                TransactionState::Commited,
+            ];
+            self.remove_service(&name, all_states);
+            let curr_fee = self
+                .services_info
+                .get_mut(&name)
+                .expect("[Transaction] El servicio deberia existir");
+            *curr_fee = fee;
+            is_valid = true;
+        } else {
+            is_valid = self.remove_service(&name, vec![TransactionState::Waiting]);
         }
-        self.update_state(name, TransactionState::Commited);
-        true
+        if is_valid {
+            self.update_state(name, TransactionState::Commited);
+        }
+        is_valid
     }
 
     fn waiting_services(&self) -> HashMap<String, f64> {
@@ -296,5 +310,30 @@ mod tests {
         assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
 
         assert!(transaction.is_aborted());
+    }
+
+    #[test]
+    fn it_should_be_able_to_force_commit() {
+        let id = 0;
+        let airline = (ServiceName::Airline.string_name(), 100.0);
+        let hotel = (ServiceName::Hotel.string_name(), 200.0);
+        let bank = (ServiceName::Bank.string_name(), 300.0);
+        let services = [airline, bank, hotel];
+        let mut transaction = Transaction::new(id, HashMap::from(services));
+
+        let new_airline_fee = 200.0;
+        let new_hotel_fee = 300.0;
+        let new_bank_fee = 500.0;
+
+        transaction.commit(ServiceName::Airline.string_name(), Some(new_airline_fee));
+        transaction.commit(ServiceName::Hotel.string_name(), Some(new_hotel_fee));
+        transaction.commit(ServiceName::Bank.string_name(), Some(new_bank_fee));
+
+        let all_services = transaction.all_services();
+        assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
+        assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
+        assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
+
+        assert!(transaction.is_commited());
     }
 }
