@@ -37,6 +37,7 @@ impl TransactionReceiver {
             curr_transaction,
         }
     }
+    
     /// # Errors
     ///
     /// `TransactionError::None` => Se recibio una transaccion,
@@ -89,11 +90,9 @@ impl TransactionReceiver {
         match transaction_code {
             TransactionCode::Accept => {
                 transaction.accept(service_name.to_string());
-                // Log this
             },
             TransactionCode::Commit => {
                 transaction.commit(service_name.to_string());
-                // Log this
             }
             _ => println!("Codigo de transaccion no esperado: {}", transaction_code),
         }

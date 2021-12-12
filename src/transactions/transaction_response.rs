@@ -1,4 +1,4 @@
-use super::transaction_code::TransactionCode;
+use super::{transaction_code::TransactionCode, types::RESPONSE_BYTE};
 
 const ACCEPT_BYTE: u8 = b'o';
 const ABORT_BYTE: u8 = b'A';
