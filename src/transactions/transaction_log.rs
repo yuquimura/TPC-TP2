@@ -2,11 +2,28 @@ use crate::{alglobo::transaction_state::TransactionState, services::service_name
 
 use super::types::LOG_BYTE;
 
-pub struct TransactionLog {
-
-}
+pub struct TransactionLog;
 
 impl TransactionLog {
+    #[must_use]
+    pub fn size() -> usize {
+        let id = 4000;
+        let airline_state = TransactionState::Waiting;
+        let airline_fee = 100.0;
+        let hotel_state = TransactionState::Accepted;
+        let hotel_fee = 200.0;
+        let bank_state = TransactionState::Aborted;
+        let bank_fee = 300.0;
+        let log_msg = TransactionLog::build(
+            id,
+            (airline_state, airline_fee),
+            (hotel_state, hotel_fee),
+            (bank_state, bank_fee)
+        );
+        log_msg.len()
+    }
+
+
     #[must_use]
     pub fn build(
         id: u64,
@@ -66,6 +83,26 @@ mod tests {
         expected.append(&mut bank_fee.to_be_bytes().to_vec());
 
         assert_eq!(log_msg, expected);
+    }
+
+    #[test]
+    fn size_return_the_len_of_result_vec() {
+
+        let id = 4000;
+        let airline_state = TransactionState::Waiting;
+        let airline_fee = 100.0;
+        let hotel_state = TransactionState::Accepted;
+        let hotel_fee = 200.0;
+        let bank_state = TransactionState::Aborted;
+        let bank_fee = 300.0;
+        let log_msg = TransactionLog::build(
+            id,
+            (airline_state, airline_fee),
+            (hotel_state, hotel_fee),
+            (bank_state, bank_fee)
+        );
+
+        assert_eq!(TransactionLog::size(), log_msg.len())
     }
 
 }

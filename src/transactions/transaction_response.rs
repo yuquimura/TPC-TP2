@@ -51,6 +51,8 @@ impl TransactionResponse {
 
 #[cfg(test)]
 mod tests {
+    use crate::{transactions::transaction_log::TransactionLog, alglobo::transaction_state::TransactionState};
+
     use super::*;
 
     #[test]
@@ -69,4 +71,19 @@ mod tests {
 
         assert_eq!(code, TransactionCode::Accept);
     }
+
+    // #[test]
+    // fn build_result_should_have_same_size_as_transaction_log_result() {
+    //     let id = 0;
+    //     let response = TransactionResponse::build(TransactionCode::Accept, id);
+    //     let log = TransactionLog::build(
+    //         id,
+    //         (TransactionState::Airline, 100.0),
+    //         (TransactionState::Hotel, 100.0),
+    //         (TransactionState::Bank, 100.0)
+    //     );
+
+    //     assert_eq!(response.len(), log.len());
+    //     assert_eq!(TransactionResponse::size(), TransactionLog::size());
+    // }
 }
