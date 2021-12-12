@@ -1,7 +1,7 @@
 pub mod alglobo;
 pub mod services;
 pub mod sockets;
-pub mod transactions;
+pub mod transaction_messages;
 pub mod candidates;
 pub mod file_reader;
 

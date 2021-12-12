@@ -1,13 +1,13 @@
 use std::mem::size_of;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
-use crate::transactions::transaction_info::TransactionInfo;
+use crate::transaction_messages::transaction_info::TransactionInfo;
 use crate::{
-    transactions::transaction_response::TransactionResponse,
+    transaction_messages::transaction_response::TransactionResponse,
 };
 use std::convert::TryInto;
-use crate::transactions::transaction_code::TransactionCode;
-use crate::transactions::transaction_request::TransactionRequest;
+use crate::transaction_messages::transaction_code::TransactionCode;
+use crate::transaction_messages::transaction_request::TransactionRequest;
 
 use super::common_client::CommonClient;
 
@@ -126,12 +126,12 @@ mod tests {
     use ntest::timeout;
     use crate::services::common_client::CommonClient;
     use crate::services::hotel_client::Hotel;
-    use crate::transactions::transaction_code::TransactionCode;
-    use crate::transactions::transaction_request::TransactionRequest;
+    use crate::transaction_messages::transaction_code::TransactionCode;
+    use crate::transaction_messages::transaction_request::TransactionRequest;
 
     use crate::sockets::udp_socket_receiver::MockUdpSocketReceiver;
     use crate::sockets::udp_socket_sender::MockUdpSocketSender;
-    use crate::transactions::transaction_response::TransactionResponse;
+    use crate::transaction_messages::transaction_response::TransactionResponse;
 
     #[test]
     #[timeout(3000)]

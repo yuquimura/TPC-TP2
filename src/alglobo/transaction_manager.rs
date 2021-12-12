@@ -7,7 +7,7 @@ use crate::{
     sockets::{
         udp_socket_sender::UdpSocketSender,
     },
-    transactions::{transaction_code::TransactionCode, transaction_request::TransactionRequest},
+    transaction_messages::{transaction_code::TransactionCode, transaction_request::TransactionRequest},
 };
 
 use super::{
@@ -211,7 +211,7 @@ mod tests {
             udp_socket_sender::MockUdpSocketSender,
             udp_socket_receiver::MockUdpSocketReceiver, socket_error::SocketError
         },
-        transactions::{transaction_response::TransactionResponse, transaction_info::TransactionInfo}, alglobo::transaction_receiver::TransactionReceiver
+        transaction_messages::{transaction_response::TransactionResponse, transaction_info::TransactionInfo}, alglobo::transaction_receiver::TransactionReceiver
     };
 
     use std::{collections::HashMap, sync::{Mutex, Arc, Condvar}, thread};

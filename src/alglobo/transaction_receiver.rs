@@ -5,10 +5,10 @@ use std::mem::size_of;
 use crate::alglobo::transaction_error::TransactionError;
 use crate::sockets::socket_error::SocketError;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
-use crate::transactions::transaction_code::TransactionCode;
-use crate::transactions::transaction_info::TransactionInfo;
-use crate::transactions::transaction_response::TransactionResponse;
-use crate::transactions::types::LOG_BYTE;
+use crate::transaction_messages::transaction_code::TransactionCode;
+use crate::transaction_messages::transaction_info::TransactionInfo;
+use crate::transaction_messages::transaction_response::TransactionResponse;
+use crate::transaction_messages::types::LOG_BYTE;
 
 use super::types::CurrentTransaction;
 
@@ -115,7 +115,7 @@ mod tests {
         alglobo::transactionable::MockTransactionable,
         services::service_name::ServiceName,
         sockets::udp_socket_receiver::MockUdpSocketReceiver,
-        transactions::{
+        transaction_messages::{
             transaction_code::TransactionCode, transaction_response::TransactionResponse, transaction_info::TransactionInfo,
         },
     };

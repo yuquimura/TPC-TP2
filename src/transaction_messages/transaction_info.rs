@@ -17,7 +17,7 @@ impl TransactionInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::transactions::{transaction_log::TransactionLog, transaction_response::TransactionResponse};
+    use crate::transaction_messages::{transaction_log::TransactionLog, transaction_response::TransactionResponse};
 
     use super::*;
     use std::cmp::max;
