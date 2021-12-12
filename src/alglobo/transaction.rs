@@ -130,9 +130,9 @@ mod tests {
     #[test]
     fn waiting_services_should_return_waiting_services_name_and_fee() {
         let services = HashMap::from([
-            (ServiceName::airline(), 100.0),
-            (ServiceName::bank(), 300.0),
-            (ServiceName::hotel(), 200.0),
+            (ServiceName::Airline.string_name(), 100.0),
+            (ServiceName::Bank.string_name(), 300.0),
+            (ServiceName::Hotel.string_name(), 200.0),
         ]);
         let transaction = Transaction::new(0, services.clone());
 
@@ -143,29 +143,29 @@ mod tests {
 
     #[test]
     fn is_accepted_should_return_false_if_any_service_is_not_accepted() {
-        let airline = (ServiceName::airline(), 100.0);
-        let bank = (ServiceName::bank(), 300.0);
-        let hotel = (ServiceName::hotel(), 200.0);
+        let airline = (ServiceName::Airline.string_name(), 100.0);
+        let bank = (ServiceName::Bank.string_name(), 300.0);
+        let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let services = [airline, bank, hotel];
         let mut transaction = Transaction::new(0, HashMap::from(services));
 
-        transaction.accept(ServiceName::airline());
-        transaction.accept(ServiceName::bank());
+        transaction.accept(ServiceName::Airline.string_name());
+        transaction.accept(ServiceName::Bank.string_name());
 
         assert!(!transaction.is_accepted())
     }
 
     #[test]
     fn is_accepted_should_return_true_if_all_service_are_accepted() {
-        let airline = (ServiceName::airline(), 100.0);
-        let bank = (ServiceName::bank(), 300.0);
-        let hotel = (ServiceName::hotel(), 200.0);
+        let airline = (ServiceName::Airline.string_name(), 100.0);
+        let bank = (ServiceName::Bank.string_name(), 300.0);
+        let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let services = [airline, bank, hotel];
         let mut transaction = Transaction::new(0, HashMap::from(services));
 
-        transaction.accept(ServiceName::airline());
-        transaction.accept(ServiceName::bank());
-        transaction.accept(ServiceName::hotel());
+        transaction.accept(ServiceName::Airline.string_name());
+        transaction.accept(ServiceName::Bank.string_name());
+        transaction.accept(ServiceName::Hotel.string_name());
 
         assert!(transaction.is_accepted())
     }

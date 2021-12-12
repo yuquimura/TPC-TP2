@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn it_should_change_transaction_service_state_to_accepted_when_recv_accept_from_it() {
-        let airline = ("127.0.0.1:49156", ServiceName::airline());
+        let airline = ("127.0.0.1:49156", ServiceName::Airline.string_name());
         let mut airline_clone;
 
         airline_clone = airline.clone();
@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn it_should_change_transaction_service_state_to_commited_when_recv_commit_from_it() {
-        let airline = ("127.0.0.1:49156", ServiceName::airline());
+        let airline = ("127.0.0.1:49156", ServiceName::Airline.string_name());
         let mut airline_clone;
 
         airline_clone = airline.clone();

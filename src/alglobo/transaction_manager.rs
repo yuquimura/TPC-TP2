@@ -224,9 +224,9 @@ mod tests {
         let hotel_addr = "127.0.0.1:49157";
         let bank_addr = "127.0.0.1:49158";
         let services_addrs_str = &HashMap::from([
-            (airline_addr, ServiceName::airline()),
-            (hotel_addr, ServiceName::hotel()),
-            (bank_addr, ServiceName::bank()),
+            (airline_addr, ServiceName::Airline.string_name()),
+            (hotel_addr, ServiceName::Hotel.string_name()),
+            (bank_addr, ServiceName::Bank.string_name()),
         ]);
         
         
@@ -237,9 +237,9 @@ mod tests {
         let transaction = Transaction::new(
             transaction_id,
             HashMap::from([
-                (ServiceName::airline(), airline_fee),
-                (ServiceName::hotel(), hotel_fee),
-                (ServiceName::bank(), bank_fee),
+                (ServiceName::Airline.string_name(), airline_fee),
+                (ServiceName::Hotel.string_name(), hotel_fee),
+                (ServiceName::Bank.string_name(), bank_fee),
                 ]),
             );
         let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
@@ -313,9 +313,9 @@ mod tests {
         let hotel_addr = "127.0.0.1:49157";
         let bank_addr = "127.0.0.1:49158";
         let services_addrs_str = &HashMap::from([
-            (airline_addr, ServiceName::airline()),
-            (hotel_addr, ServiceName::hotel()),
-            (bank_addr, ServiceName::bank()),
+            (airline_addr, ServiceName::Airline.string_name()),
+            (hotel_addr, ServiceName::Hotel.string_name()),
+            (bank_addr, ServiceName::Bank.string_name()),
         ]);
 
         let transaction_id = 1;
@@ -325,9 +325,9 @@ mod tests {
         let transaction = Transaction::new(
             transaction_id,
             HashMap::from([
-                (ServiceName::airline(), airline_fee),
-                (ServiceName::hotel(), hotel_fee),
-                (ServiceName::bank(), bank_fee),
+                (ServiceName::Airline.string_name(), airline_fee),
+                (ServiceName::Hotel.string_name(), hotel_fee),
+                (ServiceName::Bank.string_name(), bank_fee),
             ]),
         );
         let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
@@ -401,9 +401,9 @@ mod tests {
         let bank_addr = "127.0.0.1:49158";
         let addresses = [airline_addr, hotel_addr, bank_addr];
         let services_addrs_str = &HashMap::from([
-            (airline_addr, ServiceName::airline()),
-            (hotel_addr, ServiceName::hotel()),
-            (bank_addr, ServiceName::bank()),
+            (airline_addr, ServiceName::Airline.string_name()),
+            (hotel_addr, ServiceName::Hotel.string_name()),
+            (bank_addr, ServiceName::Bank.string_name()),
         ]);
 
         let transaction_id = 1;
@@ -413,9 +413,9 @@ mod tests {
         let transaction = Transaction::new(
             transaction_id,
             HashMap::from([
-                (ServiceName::airline(), airline_fee),
-                (ServiceName::hotel(), hotel_fee),
-                (ServiceName::bank(), bank_fee),
+                (ServiceName::Airline.string_name(), airline_fee),
+                (ServiceName::Hotel.string_name(), hotel_fee),
+                (ServiceName::Bank.string_name(), bank_fee),
             ]),
         );
         let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
