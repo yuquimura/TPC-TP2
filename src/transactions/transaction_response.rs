@@ -72,18 +72,15 @@ mod tests {
         assert_eq!(code, TransactionCode::Accept);
     }
 
-    // #[test]
-    // fn build_result_should_have_same_size_as_transaction_log_result() {
-    //     let id = 0;
-    //     let response = TransactionResponse::build(TransactionCode::Accept, id);
-    //     let log = TransactionLog::build(
-    //         id,
-    //         (TransactionState::Airline, 100.0),
-    //         (TransactionState::Hotel, 100.0),
-    //         (TransactionState::Bank, 100.0)
-    //     );
+    #[test]
+    fn size_should_be_the_result_of_build() {
+        let id = 0;
+        let message = TransactionResponse::build(TransactionCode::Accept, id);
+        assert_eq!(TransactionResponse::size(), message.len());
+    }
 
-    //     assert_eq!(response.len(), log.len());
-    //     assert_eq!(TransactionResponse::size(), TransactionLog::size());
-    // }
+//     #[test]
+//     fn size_should_be_equal_to_transaction_log_size() {
+//         assert_eq!(TransactionResponse::size(), TransactionLog::size());
+//     }
 }
