@@ -14,8 +14,8 @@ impl TransactionResponse {
 
     #[must_use]
     pub fn build(code: TransactionCode, id: u64) -> Vec<u8> {
-        let code = TransactionResponse::map_transaction_code(code);
-        let mut message = vec![code];
+        let mut message = vec![RESPONSE_BYTE];
+        message.push(TransactionResponse::map_transaction_code(code));
         message.append(&mut id.to_be_bytes().to_vec());
         message
     }
@@ -51,15 +51,13 @@ impl TransactionResponse {
 
 #[cfg(test)]
 mod tests {
-    use crate::{transactions::transaction_log::TransactionLog, alglobo::transaction_state::TransactionState};
-
     use super::*;
 
     #[test]
     fn accept_should_return_ok_with_id() {
         let id = 0;
         let message = TransactionResponse::build(TransactionCode::Accept, id);
-        let mut expected = vec![b'o'];
+        let mut expected = vec![RESPONSE_BYTE, b'o'];
         expected.append(&mut id.to_be_bytes().to_vec());
 
         assert_eq!(message, expected);
@@ -78,9 +76,4 @@ mod tests {
         let message = TransactionResponse::build(TransactionCode::Accept, id);
         assert_eq!(TransactionResponse::size(), message.len());
     }
-
-//     #[test]
-//     fn size_should_be_equal_to_transaction_log_size() {
-//         assert_eq!(TransactionResponse::size(), TransactionLog::size());
-//     }
 }

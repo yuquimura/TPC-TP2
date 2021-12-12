@@ -6,7 +6,9 @@ use crate::alglobo::transaction_error::TransactionError;
 use crate::sockets::socket_error::SocketError;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::transactions::transaction_code::TransactionCode;
+use crate::transactions::transaction_info::TransactionInfo;
 use crate::transactions::transaction_response::TransactionResponse;
+use crate::transactions::types::LOG_BYTE;
 
 use super::types::CurrentTransaction;
 
@@ -51,7 +53,7 @@ impl TransactionReceiver {
     /// Esta funcion paniquea si
     /// - Ocurrio un error irreversible en canal de lectura
     pub fn recv(&mut self) -> Result<(), TransactionError> {
-        let result = self.udp_receiver.recv(TransactionResponse::size());
+        let result = self.udp_receiver.recv(TransactionInfo::size());
         let (response, addr) = match result {
             Ok(value) => value,
             Err(err) => match err {
@@ -59,8 +61,12 @@ impl TransactionReceiver {
                 _ => panic!("{}", err),
             },
         };
-        let transaction_code = TransactionResponse::transaction_code(response[0]);
-        let id_bytes: [u8; size_of::<u64>()] = response[1..]
+        let info_type = response[0];
+        if info_type == LOG_BYTE {
+            panic!("TODO: Implementar mensajes de Log");
+        }
+        let transaction_code = TransactionResponse::transaction_code(response[1]);
+        let id_bytes: [u8; size_of::<u64>()] = response[2..2+size_of::<u64>()]
             .try_into()
             .expect("[Transaction Receiver] Los ids deberian ocupar 8 bytes");
         let transaction_id = u64::from_be_bytes(id_bytes);
@@ -110,7 +116,7 @@ mod tests {
         services::service_name::ServiceName,
         sockets::udp_socket_receiver::MockUdpSocketReceiver,
         transactions::{
-            transaction_code::TransactionCode, transaction_response::TransactionResponse,
+            transaction_code::TransactionCode, transaction_response::TransactionResponse, transaction_info::TransactionInfo,
         },
     };
 
@@ -128,7 +134,8 @@ mod tests {
         let services_addrs = HashMap::from([airline_clone]);
 
         let transaction_id = 0;
-        let response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        TransactionInfo::add_padding(&mut response);
 
         let mut mock_socket = MockUdpSocketReceiver::new();
         airline_clone = airline.clone();
@@ -169,7 +176,8 @@ mod tests {
         let services_addrs = HashMap::from([airline_clone]);
 
         let transaction_id = 0;
-        let response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+        let mut response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+        TransactionInfo::add_padding(&mut response);
 
         let mut mock_socket = MockUdpSocketReceiver::new();
         airline_clone = airline.clone();

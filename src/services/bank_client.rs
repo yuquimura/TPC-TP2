@@ -1,6 +1,7 @@
 use std::mem::size_of;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
+use crate::transactions::transaction_info::TransactionInfo;
 use crate::{
     transactions::transaction_response::TransactionResponse,
 };
@@ -36,7 +37,7 @@ impl CommonClient for Bank {
     fn answer_message(&mut self, vector: Vec<u8>) {
         /*let mut rng = rand::thread_rng();
         if rng > 0.2{
-            let response = TransactionResponse::build(TransactionCode::Abort,
+            let mut response = TransactionResponse::build(TransactionCode::Abort,
                                                       transaction_id);
             let addr = self.addr.clone();
             let _ =self.socket_sender.send_to(&*response, &addr);
@@ -47,8 +48,9 @@ impl CommonClient for Bank {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let response = TransactionResponse::build(TransactionCode::Accept,
+            let mut response = TransactionResponse::build(TransactionCode::Accept,
                                                       transaction_id);
+            TransactionInfo::add_padding(&mut response);
             let addr = self.addr.clone();
             let _ =self.socket_sender.send_to(&*response, &addr);
         }
@@ -57,8 +59,9 @@ impl CommonClient for Bank {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let response =TransactionResponse::build(TransactionCode::Accept,
+            let mut response =TransactionResponse::build(TransactionCode::Accept,
                                                      transaction_id);
+            TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>()+1..]
                 .try_into()
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
@@ -72,8 +75,9 @@ impl CommonClient for Bank {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let response =TransactionResponse::build(TransactionCode::Accept,
+            let mut response =TransactionResponse::build(TransactionCode::Accept,
                                                      transaction_id);
+            TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>()+1..]
                 .try_into()
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
@@ -117,6 +121,7 @@ impl CommonClient for Bank {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
 
     use ntest::timeout;
     use crate::services::bank_client::Bank;
@@ -137,8 +142,9 @@ mod tests {
         let first_msg = TransactionRequest::build(TransactionCode::Prepare,
                                                   transaction_id,
                                                   bank_fee);
-        let response = TransactionResponse::build(TransactionCode::Accept,
+        let mut response = TransactionResponse::build(TransactionCode::Accept,
                                                   transaction_id);
+        TransactionInfo::add_padding(&mut response);
         let first_msg_len = first_msg.len();
 
         let mut mock_socket_sender = MockUdpSocketSender::new();
@@ -165,8 +171,9 @@ mod tests {
         let first_msg = TransactionRequest::build(TransactionCode::Abort,
                                                   transaction_id,
                                                   bank_fee);
-        let response = TransactionResponse::build(TransactionCode::Accept,
+        let mut response = TransactionResponse::build(TransactionCode::Accept,
                                                   transaction_id);
+        TransactionInfo::add_padding(&mut response);
         let first_msg_len = first_msg.len();
 
         let mut mock_socket_sender = MockUdpSocketSender::new();
@@ -193,8 +200,9 @@ mod tests {
         let first_msg = TransactionRequest::build(TransactionCode::Commit,
                                                   transaction_id,
                                                   bank_fee);
-        let response = TransactionResponse::build(TransactionCode::Accept,
+        let mut response = TransactionResponse::build(TransactionCode::Accept,
                                                   transaction_id);
+        TransactionInfo::add_padding(&mut response);
         let first_msg_len = first_msg.len();
 
         let mut mock_socket_sender = MockUdpSocketSender::new();
@@ -221,8 +229,9 @@ mod tests {
         let first_msg = TransactionRequest::build(TransactionCode::Commit,
                                                   transaction_id,
                                                   bank_fee);
-        let response = TransactionResponse::build(TransactionCode::Accept,
+        let mut response = TransactionResponse::build(TransactionCode::Accept,
                                                   transaction_id);
+        TransactionInfo::add_padding(&mut response);
         let first_msg_len = first_msg.len();
 
         let mut mock_socket_sender = MockUdpSocketSender::new();

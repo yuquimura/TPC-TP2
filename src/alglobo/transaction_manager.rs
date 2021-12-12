@@ -211,7 +211,7 @@ mod tests {
             udp_socket_sender::MockUdpSocketSender,
             udp_socket_receiver::MockUdpSocketReceiver, socket_error::SocketError
         },
-        transactions::transaction_response::TransactionResponse, alglobo::transaction_receiver::TransactionReceiver
+        transactions::{transaction_response::TransactionResponse, transaction_info::TransactionInfo}, alglobo::transaction_receiver::TransactionReceiver
     };
 
     use std::{collections::HashMap, sync::{Mutex, Arc, Condvar}, thread};
@@ -425,10 +425,12 @@ mod tests {
         let mut mock_sender = MockUdpSocketSender::new();
         let mut mock_receiver = MockUdpSocketReceiver::new();
         
-        let accept_msg = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        let mut accept_msg = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        TransactionInfo::add_padding(&mut accept_msg);
         let mut accept_msg_clone;
 
-        let commit_msg = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+        let mut commit_msg = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+        TransactionInfo::add_padding(&mut commit_msg);
         let mut commit_msg_clone;
 
         let commit_messages = [
