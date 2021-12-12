@@ -16,7 +16,7 @@ use crate::alglobo::transaction_manager::TransactionManager;
 pub struct Leader{
     udp_receiver: Box<dyn UdpSocketReceiver + Send>,
     udp_sender: Box<dyn UdpSocketSender + Send>,
-    possible_ports: Vec<String>,
+    possible_ports: Range<i32>,
 }
 
 impl Leader {
@@ -24,7 +24,7 @@ impl Leader {
     pub fn new(
         udp_receiver: Box<dyn UdpSocketReceiver + Send>,
         udp_sender: Box<dyn UdpSocketSender + Send>,
-        possible_ports: Vec<String>,) ->Self{
+        possible_ports: Range<i32>,) ->Self{
         Leader{
             udp_receiver,
             udp_sender,
@@ -43,10 +43,10 @@ impl Leader {
                 }
                 b'e'=>{
                     let his_address = response.1.clone();                     
-                    for port in self.possible_ports.iter(){
+                    for port in self.possible_ports.clone(){
                         let message = ElectionMessage::build(ElectionCode::Leader);
                         let his_address_vect: Vec<&str> = his_address.split(':').collect();
-                        let address_to_send = his_address_vect[0].to_string() + port;   
+                        let address_to_send = his_address_vect[0].to_string() + &port.to_string();
                         let _ = self.udp_sender.send_to(message.as_slice(),&address_to_send);
                     }
                     

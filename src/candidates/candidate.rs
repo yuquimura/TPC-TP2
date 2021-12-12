@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::candidates::election_message::ElectionMessage;
@@ -5,9 +7,12 @@ use crate::sockets::udp_socket_sender::UdpSocketSender;
 use crate::candidates::election_code::ElectionCode;
 use std::time::Duration;
 use rand::Rng;
+use crate::alglobo::transaction::Transaction;
 use crate::alglobo::transaction_manager::TransactionManager;
-use crate::candidates::constants::{DEFAULT_IP, EMPTY, VEC_PORT_DATA, VEC_PORT_INFO};
+use crate::alglobo::types::CurrentTransaction;
+use crate::candidates::constants::{AIRLINE_ADDR, BANK_ADDR, DEFAULT_IP, EMPTY, HOTEL_ADDR, VEC_PORT_DATA, VEC_PORT_INFO};
 use crate::candidates::leader::Leader;
+use crate::services::service_name::ServiceName;
 use crate::sockets::udp_socket_wrap::UdpSocketWrap;
 
 
@@ -161,35 +166,42 @@ impl Candidate {
                 break;
             }
         }
-        for port in VEC_PORT_DATA {
-            let socket_data_recv = UdpSocketWrap::new_with_addr(None, port);
-            if let Ok(result_socket_recv) = socket_data_recv {
-                let socket_cloned_result = result_socket_recv.try_clone();
-                if let Ok(socket_data_clone) = socket_cloned_result {
-                    break;
+        let mut socket_data_recv = UdpSocketWrap::new(None);
+        let mut socket_data_send = UdpSocketWrap::new(None);
+        for port in 49152..49352 {
+            let socket_info_data_new = UdpSocketWrap::new_with_addr(None, port.to_string());
+            if let Ok(socket_new_aux) = socket_info_data_new {
+                socket_data_recv = socket_new_aux;
+                if let Ok(socket_aux) = socket_data_recv.try_clone(){
+                    socket_data_send = socket_aux;
                 }
             }
         }
-        for port in VEC_PORT_INFO {
-            let socket_info_recv = UdpSocketWrap::new_with_addr(None, port);
-            if let Ok(result_socket_recv) = socket_info_recv {
-                let socket_info_cloned_result = result_socket_recv.try_clone();
-                if let Ok(socket_info_clone) = socket_info_cloned_result {
-                    break;
+        let mut socket_info_recv = UdpSocketWrap::new(None);
+        let mut socket_info_send = UdpSocketWrap::new(None);
+        for port in 49152..49352 {
+            let socket_info_recv_new = UdpSocketWrap::new_with_addr(None, port.to_string());
+            if let Ok(socket_new_aux) = socket_info_recv_new {
+                socket_info_recv = socket_new_aux;
+                if let Ok(socket_aux) = socket_info_recv.try_clone(){
+                    socket_info_send = socket_aux;
                 }
             }
         }
-        /*
-        let mut leader = Leader::new(Box::new(socket_wrap_recv), Box::new(socket_wrap_send), vect_port);
-
-        let transaction_manager = TransactionManager::new(0,)
-        leader.start_leader();
-*/
-
-
+        let mut leader = Leader::new(Box::new(socket_info_recv), Box::new(socket_info_send), VEC_PORT_INFO.clone());
+        let services_addrs_str = &HashMap::from([
+            (AIRLINE_ADDR, ServiceName::Airline.string_name()),
+            (HOTEL_ADDR,ServiceName::Hotel.string_name()),
+            (BANK_ADDR,ServiceName::Bank.string_name()),
+        ]);
+        let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
+        let transaction_manager = TransactionManager::new(0, Box::new(socket_data_send), services_addrs_str, curr_transaction, Default::default());
+        leader.start_leader(transaction_manager);
         thread::spawn(move || {
             loop{
-                //transaction receiver.recv
+                if !self.im_the_leader{
+                    //recv currentTransaction socket_data_recv
+                }
 
             }
         });
