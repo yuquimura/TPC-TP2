@@ -185,4 +185,22 @@ mod tests {
 
         assert!(transaction.is_accepted())
     }
+
+    #[test]
+    fn it_should_be_able_to_set_new_id() {
+        let id = 0;
+        let airline = (ServiceName::Airline.string_name(), 100.0);
+        let bank = (ServiceName::Bank.string_name(), 300.0);
+        let hotel = (ServiceName::Hotel.string_name(), 200.0);
+        let services = [airline, bank, hotel];
+        let mut transaction = Transaction::new(id, HashMap::from(services));
+
+        let new_id = 1;
+        // let new_airline = (ServiceName::Airline.string_name(), 100.0);
+        // let new_bank = (ServiceName::Bank.string_name(), 300.0);
+        // let new_hotel = (ServiceName::Hotel.string_name(), 200.0);
+
+        transaction.set_id(new_id);
+        assert_eq!(transaction.get_id(), new_id);
+    }
 }
