@@ -52,7 +52,12 @@ impl Transactionable for Transaction {
         self.id
     }
 
-    fn accept(&mut self, name: String) -> bool {
+    fn set_id(&mut self, id: u64) -> bool {
+        self.id = id;
+        true
+    }
+
+    fn wait(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
         {
             let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
             if !waiting_services.remove(&name) {
@@ -63,7 +68,18 @@ impl Transactionable for Transaction {
         true
     }
 
-    fn abort(&mut self, name: String) -> bool {
+    fn accept(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
+        {
+            let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
+            if !waiting_services.remove(&name) {
+                return false;
+            }
+        }
+        self.update_state(name, TransactionState::Accepted);
+        true
+    }
+
+    fn abort(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
         {
             let waiting_services = self.get_mut_state_services(&TransactionState::Waiting);
             if !waiting_services.remove(&name) {
@@ -74,7 +90,7 @@ impl Transactionable for Transaction {
         true
     }
 
-    fn commit(&mut self, name: String) -> bool {
+    fn commit(&mut self, name: String, _opt_fee: Option<f64>) -> bool {
         {
             let accepted_services = self.get_mut_state_services(&TransactionState::Accepted);
             if !accepted_services.remove(&name) {
@@ -149,8 +165,8 @@ mod tests {
         let services = [airline, bank, hotel];
         let mut transaction = Transaction::new(0, HashMap::from(services));
 
-        transaction.accept(ServiceName::Airline.string_name());
-        transaction.accept(ServiceName::Bank.string_name());
+        transaction.accept(ServiceName::Airline.string_name(),None);
+        transaction.accept(ServiceName::Bank.string_name(), None);
 
         assert!(!transaction.is_accepted())
     }
@@ -163,9 +179,9 @@ mod tests {
         let services = [airline, bank, hotel];
         let mut transaction = Transaction::new(0, HashMap::from(services));
 
-        transaction.accept(ServiceName::Airline.string_name());
-        transaction.accept(ServiceName::Bank.string_name());
-        transaction.accept(ServiceName::Hotel.string_name());
+        transaction.accept(ServiceName::Airline.string_name(), None);
+        transaction.accept(ServiceName::Bank.string_name(), None);
+        transaction.accept(ServiceName::Hotel.string_name(), None);
 
         assert!(transaction.is_accepted())
     }

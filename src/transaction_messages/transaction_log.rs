@@ -1,4 +1,4 @@
-use crate::{alglobo::transaction_state::TransactionState, services::service_name::ServiceName};
+use crate::{alglobo::transaction_state::TransactionState};
 
 use super::types::LOG_BYTE;
 
@@ -34,15 +34,12 @@ impl TransactionLog {
         let mut message = vec![LOG_BYTE];
         message.append(&mut id.to_be_bytes().to_vec());
         
-        message.push(ServiceName::Airline.byte_code());
         message.push(airline_info.0.byte_code());
         message.append(&mut airline_info.1.to_be_bytes().to_vec());
 
-        message.push(ServiceName::Hotel.byte_code());
         message.push(hotel_info.0.byte_code());
         message.append(&mut hotel_info.1.to_be_bytes().to_vec());
 
-        message.push(ServiceName::Bank.byte_code());
         message.push(bank_info.0.byte_code());
         message.append(&mut bank_info.1.to_be_bytes().to_vec());
 
@@ -72,13 +69,10 @@ mod tests {
 
         let mut expected = vec![LOG_BYTE];
         expected.append(&mut id.to_be_bytes().to_vec());
-        expected.push(ServiceName::Airline.byte_code());
         expected.push(airline_state.byte_code());
         expected.append(&mut airline_fee.to_be_bytes().to_vec());
-        expected.push(ServiceName::Hotel.byte_code());
         expected.push(hotel_state.byte_code());
         expected.append(&mut hotel_fee.to_be_bytes().to_vec());
-        expected.push(ServiceName::Bank.byte_code());
         expected.push(bank_state.byte_code());
         expected.append(&mut bank_fee.to_be_bytes().to_vec());
 
