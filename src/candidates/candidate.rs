@@ -179,6 +179,7 @@ impl Candidate {
                 socket_data_recv = socket_new_aux;
                 if let Ok(socket_aux) = socket_data_recv.try_clone() {
                     socket_data_send = socket_aux;
+                    break;
                 }
             }
         }
@@ -208,6 +209,7 @@ impl Candidate {
                 socket_info_recv = socket_new_aux;
                 if let Ok(socket_aux) = socket_info_recv.try_clone() {
                     socket_info_send = socket_aux;
+                    break;
                 }
             }
         }
