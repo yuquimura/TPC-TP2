@@ -66,7 +66,7 @@ impl Leader {
             if let Ok(mut reader) = FileIterator::new("path"){
                 while !reader.ended(){
                     if let Some(transaction)= reader.next(){
-                        transaction_manager.process(transaction);
+                        transaction_manager.process(Some(transaction));
                     } 
                 }
                    

@@ -57,8 +57,10 @@ impl TransactionManager {
         }
     }
 
-    pub fn process(&mut self, transaction: Transaction) {
-        self.update_current(transaction);
+    pub fn process(&mut self, opt_transaction: Option<Transaction>) -> u64 {
+        if let Some(transaction) = opt_transaction {
+            self.update_current(transaction);
+        }
         if !self.prepare() {
             // Seguir abortando hasta que 
             // todos los servicios respondan
@@ -68,6 +70,16 @@ impl TransactionManager {
             // todos los servicios respondan
             while !self.commit() {}
         }
+
+        let opt_transaction = self
+                .curr_transaction
+                .0
+                .lock()
+                .expect("[Transaction Manager] Lock de transaccion envenenado");
+        let transaction = opt_transaction
+            .as_ref()
+            .expect("[Transaction Manager] La transaccion actual deberia exitir");
+        transaction.get_id()
     }
 
     pub fn update_current(&mut self, transaction: Transaction) {
@@ -424,10 +436,6 @@ mod tests {
         TransactionInfo::add_padding(&mut accept_msg);
         let mut accept_msg_clone;
 
-        // let mut commit_msg = TransactionResponse::build(TransactionCode::Commit, transaction_id);
-        // TransactionInfo::add_padding(&mut commit_msg);
-        // let mut commit_msg_clone;
-
         let commit_messages = [
             TransactionRequest::build(TransactionCode::Commit, transaction_id, airline_fee),
             TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee),
@@ -510,7 +518,7 @@ mod tests {
             curr_transaction.clone(),
             &services_addrs_str,
             &vec![],
-            Duration::from_secs(1),
+            Duration::from_secs(2),
         );
 
         manager.update_current(transaction);
@@ -639,7 +647,7 @@ mod tests {
             curr_transaction.clone(),
             &services_addrs_str,
             &replicas_addrs,
-            Duration::from_secs(1),
+            Duration::from_secs(2),
         );
 
         manager.update_current(transaction);
