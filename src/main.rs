@@ -1,12 +1,16 @@
+use tp::sockets::udp_socket_wrap::UdpSocketWrap;
+use tp::candidates::constants::{VEC_PORT_INFO,EMPTY};
+use tp::candidates::candidate::Candidate;
+
 fn main() {
-   /* let mut socket_data_recv = UdpSocketWrap::new(None);
+    let mut socket_data_recv = UdpSocketWrap::new(None);
     let mut socket_data_send = UdpSocketWrap::new(None);
-    let mut port_candidate :i32;
+    let mut port_candidate :i32 = 0;
     let mut vec_addr: Vec<String> = vec!["".to_string()];
-    for port in VEC_PORT_INFO {
+    for port in VEC_PORT_INFO.clone() {
         vec_addr.push(port.to_string());
     }
-    for port in VEC_PORT_INFO {
+    for port in VEC_PORT_INFO.clone() {
         let socket_info_data_new = UdpSocketWrap::new_with_addr(None, port.to_string());
         if let Ok(socket_new_aux) = socket_info_data_new {
             socket_data_recv = socket_new_aux;
@@ -18,6 +22,6 @@ fn main() {
         }
     }
 
-    let candidate = Candidate::new(Box::new(socket_data_recv), Box::new(socket_data_send), port_candidate.to_string(), vec_addr, EMPTY, "".to_string());
-    candidate.start_candidate();*/
+    let mut candidate = Candidate::new(Box::new(socket_data_recv), Box::new(socket_data_send), port_candidate.to_string(), vec_addr, EMPTY.to_string(), "".to_string());
+    candidate.start_candidate();
 }

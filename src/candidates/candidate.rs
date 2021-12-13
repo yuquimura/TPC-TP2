@@ -163,8 +163,8 @@ impl Candidate {
         }
     }
 
-    fn start_candidate(&mut self) {
-        let mut file_iter = FileIterator::new("../data/data.csv").unwrap();
+    pub fn start_candidate(&mut self) {
+        let mut file_iter = FileIterator::new("../../data/data.csv").unwrap();
         let first_transaction = file_iter.next();
         let true_first_transaction = first_transaction.unwrap();
         let first_trans_cond: CurrentTransaction = Arc::new((
