@@ -60,14 +60,13 @@ impl TransactionManager {
     pub fn process(&mut self, transaction: Transaction) {
         self.update_current(transaction);
         if !self.prepare() {
-            self.abort();
+            // Seguir abortando hasta que 
+            // todos los servicios respondan
+            while !self.abort() {}
         } else {
-            // let mut is_commited = false;
-            // while !is_commited {
-            //     is_commited = self.commit();
-            //     println!("IS COMMITED: {}", is_commited);
-            // }
-            self.commit();
+            // Seguir commiteando hasta que 
+            // todos los servicios respondan
+            while !self.commit() {}
         }
     }
 
@@ -264,7 +263,7 @@ mod tests {
         let waiting_services = transaction.waiting_services();
 
         let mut mock_sender = MockUdpSocketSender::new();
-        let mock_receiver = MockUdpSocketReceiver::new();
+        //let mut mock_receiver = MockUdpSocketReceiver::new();
 
         let addresses = [airline_addr, hotel_addr, bank_addr];
 
@@ -283,32 +282,6 @@ mod tests {
             })
             .times(waiting_services.len())
             .returning(|_, _| Ok(()));
-
-        // Necesario porque no esta implementado TransactionReceiver
-        mock_sender
-            .expect_send_to()
-            .withf(move |_, _| true)
-            .times(waiting_services.len())
-            .returning(|_, _| Ok(()));
-
-        // mock_receiver
-        //     .expect_recv()
-        //     .returning(move |_| 
-        //         Err(SocketError::Timeout)
-        //     );
-
-        let mut receiver = TransactionReceiver::new(
-            id,
-            Box::new(mock_receiver),
-            &services_addrs_str,
-            curr_transaction.clone()
-        );
-
-        thread::spawn(move || {
-            loop {
-                let _ = receiver.recv();
-            }
-        });
         
         let mut manager = TransactionManager::new(
             id,
@@ -319,7 +292,8 @@ mod tests {
             Duration::from_secs(0),
         );
 
-        manager.process(transaction);
+        manager.update_current(transaction);
+        manager.prepare();
     }
 
     #[test]
@@ -407,7 +381,9 @@ mod tests {
             Duration::from_secs(0),
         );
 
-        manager.process(transaction);
+        manager.update_current(transaction);
+        manager.prepare();
+        manager.abort();
     }
 
     #[test]
@@ -448,6 +424,10 @@ mod tests {
         TransactionInfo::add_padding(&mut accept_msg);
         let mut accept_msg_clone;
 
+        // let mut commit_msg = TransactionResponse::build(TransactionCode::Commit, transaction_id);
+        // TransactionInfo::add_padding(&mut commit_msg);
+        // let mut commit_msg_clone;
+
         let commit_messages = [
             TransactionRequest::build(TransactionCode::Commit, transaction_id, airline_fee),
             TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee),
@@ -458,6 +438,7 @@ mod tests {
             .expect_send_to()
             .withf(move |_, _| true)
             .times(n_services)
+
             .returning(|_, _| Ok(()));
 
         accept_msg_clone = accept_msg.clone();
@@ -465,6 +446,7 @@ mod tests {
             .expect_recv()
             .withf(move |_| true)
             .times(1)
+
             .returning(move |_| 
                 Ok((accept_msg_clone.clone(), airline_addr.to_string())
             ));
@@ -474,6 +456,7 @@ mod tests {
             .expect_recv()
             .withf(move |_| true)
             .times(1)
+
             .returning(move |_| 
                 Ok((accept_msg_clone.clone(), hotel_addr.to_string())
             ));
@@ -495,6 +478,12 @@ mod tests {
             )
             .times(n_services)
             .returning(|_, _| Ok(()));
+
+        mock_sender
+            .expect_send_to()
+            .returning(move |_,_| 
+                Err(SocketError::ZeroBytes)
+            );
 
         mock_receiver
             .expect_recv()
@@ -524,7 +513,9 @@ mod tests {
             Duration::from_secs(1),
         );
 
-        manager.process(transaction);
+        manager.update_current(transaction);
+        manager.prepare();
+        manager.commit();
     }
 
     #[test]
