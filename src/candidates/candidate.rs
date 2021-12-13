@@ -1,23 +1,26 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
-use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
-use crate::candidates::election_message::ElectionMessage;
-use crate::sockets::udp_socket_sender::UdpSocketSender;
-use crate::candidates::election_code::ElectionCode;
 use std::time::Duration;
+
 use rand::Rng;
+
 use crate::alglobo::transaction::Transaction;
 use crate::alglobo::transaction_manager::TransactionManager;
+use crate::alglobo::transaction_receiver::TransactionReceiver;
 use crate::alglobo::types::CurrentTransaction;
 use crate::candidates::constants::{AIRLINE_ADDR, BANK_ADDR, DEFAULT_IP, EMPTY, HOTEL_ADDR, VEC_PORT_DATA, VEC_PORT_INFO};
+use crate::candidates::election_code::ElectionCode;
+use crate::candidates::election_message::ElectionMessage;
 use crate::candidates::leader::Leader;
+use crate::file_reader::file_iterator::FileIterator;
 use crate::services::service_name::ServiceName;
+use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
+use crate::sockets::udp_socket_sender::UdpSocketSender;
 use crate::sockets::udp_socket_wrap::UdpSocketWrap;
 
-
 #[allow(dead_code)]
-pub struct Candidate{
+pub struct Candidate {
     udp_receiver: Box<dyn UdpSocketReceiver>,
     udp_sender: Box<dyn UdpSocketSender>,
     my_port: String,
@@ -25,18 +28,15 @@ pub struct Candidate{
     leader_port: String,
     leader_address: String,
     im_the_leader: bool,
-    udp_receiver_info: Box<dyn UdpSocketReceiver>,
-    udp_sender_info: Box<dyn UdpSocketSender>,
 }
 
 impl Candidate {
     #[must_use]
-    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>,udp_sender: Box<dyn UdpSocketSender>,
-               udp_receiver_info: Box<dyn UdpSocketReceiver>,udp_sender_info: Box<dyn UdpSocketSender>,
-        my_port: String, possible_ports: Vec<String>,leader_port: String, 
-        leader_address: String)->Self{
+    pub fn new(udp_receiver: Box<dyn UdpSocketReceiver>, udp_sender: Box<dyn UdpSocketSender>,
+               my_port: String, possible_ports: Vec<String>, leader_port: String,
+               leader_address: String) -> Self {
         let im_the_leader = false;
-        Candidate{
+        Candidate {
             udp_receiver,
             udp_sender,
             my_port,
@@ -44,59 +44,52 @@ impl Candidate {
             leader_port,
             leader_address,
             im_the_leader,
-            udp_sender_info,
-            udp_receiver_info
         }
     }
 
-    pub fn send_to(& mut self){
+    pub fn send_to(&mut self) {
         if self.leader_port == EMPTY {
             self.start_election(&DEFAULT_IP.to_string());
             return;
         }
-        let message = ElectionMessage::build(ElectionCode::Alive);        
-        let _ = self.udp_sender.send_to(message.as_slice(),&self.leader_address);
-        self.udp_receiver.set_timeout(Some(Duration::from_millis(1000)));        
+        let message = ElectionMessage::build(ElectionCode::Alive);
+        let _ = self.udp_sender.send_to(message.as_slice(), &self.leader_address);
+        self.udp_receiver.set_timeout(Some(Duration::from_millis(1000)));
         if let Ok(value) = self.udp_receiver.recv(ElectionMessage::size()) {
-            match value.0[0] {                 
-                b'v'=>{
+            match value.0[0] {
+                b'v' => {
                     self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
-                    if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){                      
-                        let his_address = response.1;                             
-                        let _ = self.udp_sender.send_to(message.as_slice(),&his_address);              
-                        self.im_the_leader =  self.start_election(&his_address);
-                        if self.im_the_leader{
+                    if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
+                        let his_address = response.1;
+                        let _ = self.udp_sender.send_to(message.as_slice(), &his_address);
+                        self.im_the_leader = self.start_election(&his_address);
+                        if self.im_the_leader {
                             //soy el lider
                             self.communicate_new_leader(his_address)
                         }
                     }
-                }                
+                }
                 //contemplar que pasa cuando llega un mensaje de election y tengo que contestar OK, como se que no soy el lider?
-                b'e' => {  
-                    let his_address = value.1;                             
-                    let _ = self.udp_sender.send_to(message.as_slice(),&his_address);
-                    self.im_the_leader =  self.start_election(&his_address);
+                b'e' => {
+                    let his_address = value.1;
+                    let _ = self.udp_sender.send_to(message.as_slice(), &his_address);
+                    self.im_the_leader = self.start_election(&his_address);
                     self.start_election(&his_address);
-                    if self.im_the_leader{
+                    if self.im_the_leader {
                         //soy el lider
                         self.communicate_new_leader(his_address);
-                    }
-                    else{
-                        loop{
+                    } else {
+                        loop {
                             self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
-                            if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){
-                                if response.0[0] == b'l'{
+                            if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
+                                if response.0[0] == b'l' {
                                     let his_port_vect: Vec<&str> = response.1.split(':').collect();
                                     self.leader_port = his_port_vect[1].to_string();
                                     self.leader_address = response.1;
                                 }
-                                
+                            }
                         }
-
-                        }
-                        
                     }
-                    
                 }
                 b'l' => {
                     let his_port_vect: Vec<&str> = value.1.split(':').collect();
@@ -106,33 +99,28 @@ impl Candidate {
                 _ => {
                     println!("No hay mas casos");
                 }
-            }  
-            
+            }
         } else {
-            self.im_the_leader =  self.start_election(&self.leader_address.to_string());
-            if self.im_the_leader{
+            self.im_the_leader = self.start_election(&self.leader_address.to_string());
+            if self.im_the_leader {
                 //soy el lider
                 self.communicate_new_leader(self.leader_address.parse().unwrap());
-
-            }
-            else{
-                loop{
+            } else {
+                loop {
                     self.udp_receiver.set_timeout(Some(Duration::from_millis(10000)));
-                    if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()){
-                        if response.0[0] == b'l'{
+                    if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
+                        if response.0[0] == b'l' {
                             let his_port_vect: Vec<&str> = response.1.split(':').collect();
                             self.leader_port = his_port_vect[1].to_string();
                             self.leader_address = response.1;
-
-                        } 
+                        }
                     }
                 }
-                
             }
         }
     }
 
-    fn start_election(&mut self, his_address: &String) ->bool {
+    fn start_election(&mut self, his_address: &String) -> bool {
         let mut im_the_leader = true;
         for port in self.possible_ports.iter() {
             if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap() {
@@ -159,31 +147,45 @@ impl Candidate {
         }
     }
 
-    fn start_candidate(&mut self,){
-        loop {
-            self.send_to();
-            if self.im_the_leader {
-                break;
-            }
-        }
+    fn start_candidate(&mut self) {
+        let mut file_iter = FileIterator::new("../data/data.csv").unwrap();
+        let first_transaction = file_iter.next();
+        let true_first_transaction = first_transaction.unwrap();
+        let first_trans_cond:CurrentTransaction = Arc::new((Mutex::new(Some(Box::new(true_first_transaction))), Condvar::new()));
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
         for port in 49152..49352 {
             let socket_info_data_new = UdpSocketWrap::new_with_addr(None, port.to_string());
             if let Ok(socket_new_aux) = socket_info_data_new {
                 socket_data_recv = socket_new_aux;
-                if let Ok(socket_aux) = socket_data_recv.try_clone(){
+                if let Ok(socket_aux) = socket_data_recv.try_clone() {
                     socket_data_send = socket_aux;
                 }
             }
         }
+        let true_first_trans_cond = first_trans_cond.clone();
+        thread::spawn(move || {
+            let mut transaction_receiver = TransactionReceiver::new(0,
+                                                                    Box::new((socket_data_recv)),
+                                                                    &Default::default(),
+                                                                    true_first_trans_cond);
+
+            transaction_receiver.recv();
+        });
+        loop {
+            self.send_to();
+            if self.im_the_leader {
+                break;
+            }
+        }
+
         let mut socket_info_recv = UdpSocketWrap::new(None);
         let mut socket_info_send = UdpSocketWrap::new(None);
         for port in 49152..49352 {
             let socket_info_recv_new = UdpSocketWrap::new_with_addr(None, port.to_string());
             if let Ok(socket_new_aux) = socket_info_recv_new {
                 socket_info_recv = socket_new_aux;
-                if let Ok(socket_aux) = socket_info_recv.try_clone(){
+                if let Ok(socket_aux) = socket_info_recv.try_clone() {
                     socket_info_send = socket_aux;
                 }
             }
@@ -191,23 +193,19 @@ impl Candidate {
         let mut leader = Leader::new(Box::new(socket_info_recv), Box::new(socket_info_send), VEC_PORT_INFO.clone());
         let services_addrs_str = &HashMap::from([
             (AIRLINE_ADDR, ServiceName::Airline.string_name()),
-            (HOTEL_ADDR,ServiceName::Hotel.string_name()),
-            (BANK_ADDR,ServiceName::Bank.string_name()),
+            (HOTEL_ADDR, ServiceName::Hotel.string_name()),
+            (BANK_ADDR, ServiceName::Bank.string_name()),
         ]);
-        let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
-        let transaction_manager = TransactionManager::new(0, Box::new(socket_data_send), services_addrs_str, curr_transaction, Default::default());
-        leader.start_leader(transaction_manager);
-        thread::spawn(move || {
-            loop{
-                if !self.im_the_leader{
-                    //recv currentTransaction socket_data_recv
-                }
-
-            }
-        });
+        let mut vec_addr: Vec<String> = vec!["".to_string()];
+        for port in VEC_PORT_DATA.clone() {
+            vec_addr.push(port.to_string());
+        }
+        let vec = &vec_addr;
+        let mut transaction_manager = TransactionManager::new(0, Box::new(socket_data_send), first_trans_cond.clone(), services_addrs_str, vec, Default::default());
+        let id = transaction_manager.process(None);
+        leader.start_leader(transaction_manager,id);
     }
 }
-
 
 
 // #[cfg(test)]

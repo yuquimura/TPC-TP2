@@ -1,4 +1,5 @@
+use tp::candidates::candidate::Candidate;
 
 fn main() {
-    println!("Hello, world!");
+    let candidate = Candidate::new()
 }

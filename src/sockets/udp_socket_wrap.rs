@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn it_should_send_a_message() {
-        let addr = "127.0.0.1:49153";
+        let addr = "127.0.0.1:59153";
         let socket = UdpSocket::bind(addr).unwrap();
         let mut client = UdpSocketWrap::new(None);
 
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn it_should_recv_a_message() {
-        let addr = "127.0.0.1:49154"; // Test en paralelo => Usar un puerto distinto
+        let addr = "127.0.0.1:59154"; // Test en paralelo => Usar un puerto distinto
         let socket = UdpSocket::bind(addr).unwrap();
         let mut client = UdpSocketWrap::new(None);
 
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     #[timeout(5000)]
     fn it_should_be_send_from_the_original_and_receive_from_the_cloned() {
-        let addr = "127.0.0.1:49155"; // Test en paralelo => Usar un puerto distinto
+        let addr = "127.0.0.1:59155"; // Test en paralelo => Usar un puerto distinto
         let socket = UdpSocket::bind(addr).unwrap();
         let original = UdpSocketWrap::new(None);
         let clone = original.try_clone().unwrap();

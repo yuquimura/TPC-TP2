@@ -33,7 +33,7 @@ impl TransactionManager {
         udp_sender: Box<dyn UdpSocketSender + Send>,
         curr_transaction: CurrentTransaction,
         services_addrs_str: &HashMap<&str, String>, 
-        replicas_addrs_str: &Vec<&str>,
+        replicas_addrs_str: &Vec<String>,
         timeout: Duration,
     ) -> Self {
         let services_addrs = services_addrs_str
@@ -531,9 +531,9 @@ mod tests {
         let id = 0;
 
         let replicas_addrs = vec![
-            "127.0.0.1:49159",
-            "127.0.0.1:49160",
-            "127.0.0.1:49161",
+            "127.0.0.1:49159".to_string(),
+            "127.0.0.1:49160".to_string(),
+            "127.0.0.1:49161".to_string(),
         ];
         let replicas_addrs_clone;
 
@@ -617,7 +617,7 @@ mod tests {
             .expect_send_to()
             .withf(move |buf, addr| 
                 &buf.to_vec() == &log_msg_clone &&
-                replicas_addrs_clone.contains(&addr)
+                replicas_addrs_clone.contains(&addr.to_string())
             )
             .times(n_services)
             .returning(|_, _| Ok(()));
@@ -659,9 +659,9 @@ mod tests {
         let id = 0;
 
         let replicas_addrs = vec![
-            "127.0.0.1:49159",
-            "127.0.0.1:49160",
-            "127.0.0.1:49161",
+            "127.0.0.1:49159".to_string(),
+            "127.0.0.1:49160".to_string(),
+            "127.0.0.1:49161".to_string(),
         ];
         let replicas_addrs_clone;
 
@@ -748,7 +748,7 @@ mod tests {
             .expect_send_to()
             .withf(move |buf, addr| 
                 &buf.to_vec() == &log_msg_clone &&
-                replicas_addrs_clone.contains(&addr)
+                replicas_addrs_clone.contains(&addr.to_string())
             )
             .times(n_services)
             .returning(|_, _| Ok(()));
@@ -790,9 +790,9 @@ mod tests {
         let id = 0;
 
         let replicas_addrs = vec![
-            "127.0.0.1:49159",
-            "127.0.0.1:49160",
-            "127.0.0.1:49161",
+            "127.0.0.1:49159".to_string(),
+            "127.0.0.1:49160".to_string(),
+            "127.0.0.1:49161".to_string(),
         ];
         let replicas_addrs_clone;
 
@@ -880,7 +880,7 @@ mod tests {
             .expect_send_to()
             .withf(move |buf, addr| 
                 &buf.to_vec() == &log_msg_clone &&
-                replicas_addrs_clone.contains(&addr)
+                replicas_addrs_clone.contains(&addr.to_string())
             )
             .times(n_services)
             .returning(|_, _| Ok(()));

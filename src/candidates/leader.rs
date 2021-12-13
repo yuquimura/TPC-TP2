@@ -10,6 +10,7 @@ use crate::candidates::election_code::ElectionCode;
 use std::time::Duration;
 use crate::file_reader::file_iterator::FileIterator;
 use crate::alglobo::transaction_manager::TransactionManager;
+use crate::alglobo::transactionable::Transactionable;
 
 
 #[allow(dead_code)]
@@ -59,15 +60,17 @@ impl Leader {
 
     }
 
-    pub fn start_leader(& mut self, mut transaction_manager: TransactionManager){ 
+    pub fn start_leader(& mut self, mut transaction_manager: TransactionManager, start_line:u64){
         let boolean = false;
         let lock = Arc::new(RwLock::new(boolean));  
         let lock_clone = lock.clone();
         let join_handle = thread::spawn(move || {
-            if let Ok(mut reader) = FileIterator::new("path"){
+            if let Ok(mut reader) = FileIterator::new("../data/data.csv"){
                 while !reader.ended(){
                     if let Some(transaction)= reader.next(){
-                        transaction_manager.process(Some(transaction));
+                        if transaction.get_id()>start_line {
+                            transaction_manager.process(Some(transaction));
+                        }
                     } 
                 }
                    
