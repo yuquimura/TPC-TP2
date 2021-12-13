@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum TransactionState {
     Waiting,
     Accepted,
@@ -28,6 +28,21 @@ impl TransactionState {
             TransactionState::Commited => b'C',
         }
     }
+
+    /// Panics
+    /// 
+    /// Esta funcion paniquea cuando se recibe un byte 
+    /// para el cual no existe un estado de transaccion
+    pub fn from_byte(byte: u8) -> Self {
+        let err = format!("[TransactionState] No hay estado para el byte: {}", byte);
+        match byte {
+            b'W' => TransactionState::Waiting,
+            b'O' => TransactionState::Accepted,
+            b'A' => TransactionState::Aborted,
+            b'C' => TransactionState::Commited,
+            _ => panic!("{}", err)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -40,5 +55,13 @@ mod tests {
         assert_eq!(TransactionState::Accepted.byte_code(), b'O');
         assert_eq!(TransactionState::Aborted.byte_code(), b'A');
         assert_eq!(TransactionState::Commited.byte_code(), b'C');
+    }
+
+    #[test]
+    fn from_byte_should_return_a_transaction_state_for_each_valid_byte() {
+        assert_eq!(TransactionState::from_byte(b'W'), TransactionState::Waiting);
+        assert_eq!(TransactionState::from_byte(b'O'), TransactionState::Accepted);
+        assert_eq!(TransactionState::from_byte(b'A'), TransactionState::Aborted);
+        assert_eq!(TransactionState::from_byte(b'C'), TransactionState::Commited);
     }
 }   

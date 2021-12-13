@@ -3,8 +3,8 @@ use std::cmp::max;
 pub struct TransactionInfo;
 
 impl TransactionInfo {
-    pub fn size() -> usize {
-        39
+    pub const fn size() -> usize {
+        36
     }
 
     pub fn add_padding(message: &mut Vec<u8>) {
