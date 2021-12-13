@@ -2,10 +2,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
-
-use rand::Rng;
-
-use crate::alglobo::transaction::Transaction;
 use crate::alglobo::transaction_manager::TransactionManager;
 use crate::alglobo::transaction_receiver::TransactionReceiver;
 use crate::alglobo::types::CurrentTransaction;
@@ -56,7 +52,7 @@ impl Candidate {
 
     pub fn send_to(&mut self) {
         if self.leader_port == EMPTY {
-            self.start_election(&DEFAULT_IP.to_string());
+            self.im_the_leader= self.start_election(&DEFAULT_IP.to_string());
             return;
         }
         let message = ElectionMessage::build(ElectionCode::Alive);
@@ -85,7 +81,6 @@ impl Candidate {
                     let his_address = value.1;
                     let _ = self.udp_sender.send_to(message.as_slice(), &his_address);
                     self.im_the_leader = self.start_election(&his_address);
-                    self.start_election(&his_address);
                     if self.im_the_leader {
                         //soy el lider
                         self.communicate_new_leader(his_address);
@@ -135,22 +130,25 @@ impl Candidate {
 
     fn start_election(&mut self, his_address: &String) -> bool {
         let mut im_the_leader = true;
+        println!("Voy a elegir eligiendo");
         for port in self.possible_ports.iter() {
+            println!("Estoy eligiendo");
             if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap() {
                 let message = ElectionMessage::build(ElectionCode::Election);
                 let his_address_vect: Vec<&str> = his_address.split(':').collect();
-                let address_to_send = his_address_vect[0].to_string() + port;
+                let address_to_send = his_address_vect[0].to_string()+":" + port;
                 let _ = self
                     .udp_sender
                     .send_to(message.as_slice(), &address_to_send);
                 self.udp_receiver
-                    .set_timeout(Some(Duration::from_millis(1000)));
+                    .set_timeout(Some(Duration::from_millis(100)));
                 if let Ok(_response) = self.udp_receiver.recv(ElectionMessage::size()) {
                     //loggear que me respondieron
                     im_the_leader = false;
                 }
             }
         }
+        println!("Termine de elegir");
         return im_the_leader;
     }
 
@@ -161,10 +159,11 @@ impl Candidate {
             let adr_to_send = his_adr_vect[0].to_string() + port;
             let _ = self.udp_sender.send_to(message.as_slice(), &adr_to_send);
         }
+        self.leader_port = self.my_port.clone();
     }
 
     pub fn start_candidate(&mut self) {
-        let mut file_iter = FileIterator::new("../../data/data.csv").unwrap();
+        let mut file_iter = FileIterator::new("data/data.csv").unwrap();
         let first_transaction = file_iter.next();
         let true_first_transaction = first_transaction.unwrap();
         let first_trans_cond: CurrentTransaction = Arc::new((
@@ -187,15 +186,16 @@ impl Candidate {
         thread::spawn(move || {
             let mut transaction_receiver = TransactionReceiver::new(
                 0,
-                Box::new((socket_data_recv)),
+                Box::new(socket_data_recv),
                 &Default::default(),
                 true_first_trans_cond,
             );
 
-            transaction_receiver.recv();
+            let _ =transaction_receiver.recv();
         });
         loop {
             self.send_to();
+
             if self.im_the_leader {
                 break;
             }
@@ -223,9 +223,9 @@ impl Candidate {
             (HOTEL_ADDR, ServiceName::Hotel.string_name()),
             (BANK_ADDR, ServiceName::Bank.string_name()),
         ]);
-        let mut vec_addr: Vec<String> = vec!["".to_string()];
+        let mut vec_addr: Vec<String> = vec![DEFAULT_IP.to_string()+"49353"];
         for port in VEC_PORT_DATA.clone() {
-            vec_addr.push(port.to_string());
+            vec_addr.push(DEFAULT_IP.to_string()+port.to_string().as_str());
         }
         let vec = &vec_addr;
         let mut transaction_manager = TransactionManager::new(

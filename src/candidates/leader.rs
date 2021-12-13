@@ -9,7 +9,6 @@ use std::ops::Range;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
-use std::thread::JoinHandle;
 use std::time::Duration;
 
 #[allow(dead_code)]
@@ -66,7 +65,7 @@ impl Leader {
         let lock = Arc::new(RwLock::new(boolean));
         let lock_clone = lock.clone();
         let join_handle = thread::spawn(move || {
-            if let Ok(mut reader) = FileIterator::new("../data/data.csv") {
+            if let Ok(mut reader) = FileIterator::new("../../data/data.csv") {
                 while !reader.ended() {
                     if let Some(transaction) = reader.next() {
                         if transaction.get_id() > start_line {
