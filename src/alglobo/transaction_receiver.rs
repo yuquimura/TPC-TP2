@@ -41,10 +41,14 @@ impl TransactionReceiver {
             curr_transaction,
         }
     }
-    
-    pub fn process_response(&mut self, response: Vec<u8>, addr: String) -> Result<(), TransactionError> {
+
+    pub fn process_response(
+        &mut self,
+        response: Vec<u8>,
+        addr: String,
+    ) -> Result<(), TransactionError> {
         let transaction_code = TransactionResponse::transaction_code(response[1]);
-        let id_bytes: [u8; size_of::<u64>()] = response[2..2+size_of::<u64>()]
+        let id_bytes: [u8; size_of::<u64>()] = response[2..2 + size_of::<u64>()]
             .try_into()
             .expect("[Transaction Receiver] Los ids deberian ocupar 8 bytes");
         let transaction_id = u64::from_be_bytes(id_bytes);
@@ -74,10 +78,10 @@ impl TransactionReceiver {
         match transaction_code {
             TransactionCode::Accept => {
                 transaction.accept(service_name.to_string(), None);
-            },
+            }
             TransactionCode::Abort => {
                 transaction.abort(service_name.to_string(), None);
-            },
+            }
             TransactionCode::Commit => {
                 transaction.commit(service_name.to_string(), None);
             }
@@ -89,30 +93,39 @@ impl TransactionReceiver {
 
     pub fn update_transaction_state(
         &mut self,
-        message: &Vec<u8>, 
+        message: &Vec<u8>,
         service_name: String,
         idx_state: usize,
-        idx_fee: usize
-    ) -> Result<(), TransactionError>{
+        idx_fee: usize,
+    ) -> Result<(), TransactionError> {
         let mut opt_transaccion = self
-                .curr_transaction
-                .0
-                .lock()
-                .expect("[Transaction Receiver] Lock de transaccion envenenado");
+            .curr_transaction
+            .0
+            .lock()
+            .expect("[Transaction Receiver] Lock de transaccion envenenado");
         let transaction = match opt_transaccion.as_mut() {
             Some(value) => value,
             None => return Err(TransactionError::None),
         };
 
         let state = TransactionState::from_byte(message[idx_state]);
-        let fee_bytes: [u8; size_of::<f64>()] = message[idx_fee..idx_fee+size_of::<f64>()]
+        let fee_bytes: [u8; size_of::<f64>()] = message[idx_fee..idx_fee + size_of::<f64>()]
             .try_into()
             .expect("[Transaction Receiver] Los pagos deberian ocupar 8 bytes");
         let fee = f64::from_be_bytes(fee_bytes);
 
-        println!("[Transaction Receiver] Actualizar transaccion del servicioo {}", service_name);
-        println!("[Transaction Receiver] Actualizar transaccion con estado {}", state);
-        println!("[Transaction Receiver] Actualizar transaccion con pago {}", fee);
+        println!(
+            "[Transaction Receiver] Actualizar transaccion del servicioo {}",
+            service_name
+        );
+        println!(
+            "[Transaction Receiver] Actualizar transaccion con estado {}",
+            state
+        );
+        println!(
+            "[Transaction Receiver] Actualizar transaccion con pago {}",
+            fee
+        );
 
         match state {
             TransactionState::Waiting => transaction.wait(service_name, Some(fee)),
@@ -127,12 +140,12 @@ impl TransactionReceiver {
         const IDX_ID: usize = 1;
         const IDX_AIRLINE_STATE: usize = IDX_ID + size_of::<u64>();
         const IDX_AIRLINE_FEE: usize = IDX_AIRLINE_STATE + 1;
-        
+
         const IDX_HOTEL_STATE: usize = IDX_AIRLINE_FEE + size_of::<u64>();
-        const IDX_HOTEL_FEE: usize =   IDX_HOTEL_STATE + 1;
+        const IDX_HOTEL_FEE: usize = IDX_HOTEL_STATE + 1;
 
         const IDX_BANK_STATE: usize = IDX_HOTEL_FEE + size_of::<u64>();
-        const IDX_BANK_FEE: usize =   IDX_BANK_STATE + 1;
+        const IDX_BANK_FEE: usize = IDX_BANK_STATE + 1;
         {
             let mut opt_transaccion = self
                 .curr_transaction
@@ -143,35 +156,41 @@ impl TransactionReceiver {
                 Some(value) => value,
                 None => return Err(TransactionError::None),
             };
-    
+
             let id_bytes: [u8; size_of::<u64>()] = message[IDX_ID..IDX_AIRLINE_STATE]
                 .try_into()
                 .expect("[Transaction Receiver] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            println!("[Transaction Receiver] Actualizar transaccion de id {}", transaction_id);
+            println!(
+                "[Transaction Receiver] Actualizar transaccion de id {}",
+                transaction_id
+            );
             transaction.set_id(transaction_id);
         }
 
         self.update_transaction_state(
-            &message, 
-            ServiceName::Airline.string_name(), 
-            IDX_AIRLINE_STATE, 
-            IDX_AIRLINE_FEE
-        ).expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
+            &message,
+            ServiceName::Airline.string_name(),
+            IDX_AIRLINE_STATE,
+            IDX_AIRLINE_FEE,
+        )
+        .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
 
         self.update_transaction_state(
-            &message, 
-            ServiceName::Hotel.string_name(), 
+            &message,
+            ServiceName::Hotel.string_name(),
             IDX_HOTEL_STATE,
-            IDX_HOTEL_FEE
-        ).expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
+            IDX_HOTEL_FEE,
+        )
+        .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
 
         self.update_transaction_state(
-            &message, 
-            ServiceName::Bank.string_name(), 
-            IDX_BANK_STATE, 
-            IDX_BANK_FEE
-        ).expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
+            &message,
+            ServiceName::Bank.string_name(),
+            IDX_BANK_STATE,
+            IDX_BANK_FEE,
+        )
+        .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
 
         Ok(())
     }
@@ -201,7 +220,7 @@ impl TransactionReceiver {
         match info_type {
             RESPONSE_BYTE => self.process_response(message, addr),
             LOG_BYTE => self.process_log(message),
-            _ => panic!("Byte de informacion desconocido")
+            _ => panic!("Byte de informacion desconocido"),
         }
     }
 }
@@ -211,11 +230,12 @@ mod tests {
     use super::*;
 
     use crate::{
-        alglobo::{transactionable::MockTransactionable, transaction_state::TransactionState},
+        alglobo::{transaction_state::TransactionState, transactionable::MockTransactionable},
         services::service_name::ServiceName,
         sockets::udp_socket_receiver::MockUdpSocketReceiver,
         transaction_messages::{
-            transaction_code::TransactionCode, transaction_response::TransactionResponse, transaction_info::TransactionInfo, transaction_log::TransactionLog,
+            transaction_code::TransactionCode, transaction_info::TransactionInfo,
+            transaction_log::TransactionLog, transaction_response::TransactionResponse,
         },
     };
 
@@ -254,7 +274,7 @@ mod tests {
             .expect_accept()
             .withf(move |name, _| name == &airline.1)
             .times(1)
-            .returning(|_,_| true);
+            .returning(|_, _| true);
 
         let mut receiver = TransactionReceiver::new(
             0,
@@ -294,9 +314,9 @@ mod tests {
             .returning(move || transaction_id);
         mock_transaction
             .expect_commit()
-            .withf(move |name,_| name == &airline.1)
+            .withf(move |name, _| name == &airline.1)
             .times(1)
-            .returning(|_,_| true);
+            .returning(|_, _| true);
 
         let mut receiver = TransactionReceiver::new(
             0,
@@ -316,17 +336,12 @@ mod tests {
             ("127.0.0.1:49158", ServiceName::Bank.string_name()),
         ]);
 
-
         let transaction_id = 0;
         let airline_info = (TransactionState::Waiting, 100.0);
         let hotel_info = (TransactionState::Accepted, 200.0);
         let bank_info = (TransactionState::Aborted, 300.0);
-        let mut message = TransactionLog::build(
-            transaction_id,
-            airline_info,
-            hotel_info,
-            bank_info,
-        );
+        let mut message =
+            TransactionLog::build(transaction_id, airline_info, hotel_info, bank_info);
         TransactionInfo::add_padding(&mut message);
 
         let mut mock_socket = MockUdpSocketReceiver::new();
@@ -346,28 +361,25 @@ mod tests {
             .returning(move |_| true);
         mock_transaction
             .expect_wait()
-            .withf(move |name, opt_fee| 
-                name == &ServiceName::Airline.string_name() &&
-                opt_fee.unwrap() == airline_info.1
-            )
+            .withf(move |name, opt_fee| {
+                name == &ServiceName::Airline.string_name() && opt_fee.unwrap() == airline_info.1
+            })
             .times(1)
-            .returning(|_,_| true);
+            .returning(|_, _| true);
         mock_transaction
             .expect_accept()
-            .withf(move |name, opt_fee| 
-                name == &ServiceName::Hotel.string_name() &&
-                opt_fee.unwrap() == hotel_info.1
-            )
+            .withf(move |name, opt_fee| {
+                name == &ServiceName::Hotel.string_name() && opt_fee.unwrap() == hotel_info.1
+            })
             .times(1)
-            .returning(|_,_| true);
+            .returning(|_, _| true);
         mock_transaction
             .expect_abort()
-            .withf(move |name, opt_fee| 
-                name == &ServiceName::Bank.string_name() &&
-                opt_fee.unwrap() == bank_info.1
-            )
+            .withf(move |name, opt_fee| {
+                name == &ServiceName::Bank.string_name() && opt_fee.unwrap() == bank_info.1
+            })
             .times(1)
-            .returning(|_,_| true);
+            .returning(|_, _| true);
 
         let mut receiver = TransactionReceiver::new(
             0,

@@ -5,7 +5,7 @@ pub enum TransactionCode {
     Prepare,
     Abort,
     Accept,
-    Commit
+    Commit,
 }
 
 impl fmt::Display for TransactionCode {
@@ -14,7 +14,7 @@ impl fmt::Display for TransactionCode {
             TransactionCode::Prepare => write!(f, "PREPARAR"),
             TransactionCode::Abort => write!(f, "ABORTAR"),
             TransactionCode::Accept => write!(f, "ACEPTAR"),
-            TransactionCode::Commit => write!(f,"COMMIT")
+            TransactionCode::Commit => write!(f, "COMMIT"),
         }
     }
 }

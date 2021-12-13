@@ -1,4 +1,4 @@
-use crate::{alglobo::transaction_state::TransactionState};
+use crate::alglobo::transaction_state::TransactionState;
 
 use super::types::LOG_BYTE;
 
@@ -18,22 +18,21 @@ impl TransactionLog {
             id,
             (airline_state, airline_fee),
             (hotel_state, hotel_fee),
-            (bank_state, bank_fee)
+            (bank_state, bank_fee),
         );
         log_msg.len()
     }
-
 
     #[must_use]
     pub fn build(
         id: u64,
         airline_info: (TransactionState, f64),
-        hotel_info: (TransactionState, f64), 
-        bank_info: (TransactionState, f64)
+        hotel_info: (TransactionState, f64),
+        bank_info: (TransactionState, f64),
     ) -> Vec<u8> {
         let mut message = vec![LOG_BYTE];
         message.append(&mut id.to_be_bytes().to_vec());
-        
+
         message.push(airline_info.0.byte_code());
         message.append(&mut airline_info.1.to_be_bytes().to_vec());
 
@@ -64,7 +63,7 @@ mod tests {
             id,
             (airline_state, airline_fee),
             (hotel_state, hotel_fee),
-            (bank_state, bank_fee)
+            (bank_state, bank_fee),
         );
 
         let mut expected = vec![LOG_BYTE];
@@ -81,7 +80,6 @@ mod tests {
 
     #[test]
     fn size_should_be_the_len_of_result_of_build() {
-
         let id = 4000;
         let airline_state = TransactionState::Waiting;
         let airline_fee = 100.0;
@@ -93,10 +91,9 @@ mod tests {
             id,
             (airline_state, airline_fee),
             (hotel_state, hotel_fee),
-            (bank_state, bank_fee)
+            (bank_state, bank_fee),
         );
 
         assert_eq!(TransactionLog::size(), log_msg.len())
     }
-
 }

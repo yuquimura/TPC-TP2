@@ -5,7 +5,7 @@ pub enum TransactionState {
     Waiting,
     Accepted,
     Aborted,
-    Commited
+    Commited,
 }
 
 impl fmt::Display for TransactionState {
@@ -30,8 +30,8 @@ impl TransactionState {
     }
 
     /// Panics
-    /// 
-    /// Esta funcion paniquea cuando se recibe un byte 
+    ///
+    /// Esta funcion paniquea cuando se recibe un byte
     /// para el cual no existe un estado de transaccion
     pub fn from_byte(byte: u8) -> Self {
         let err = format!("[TransactionState] No hay estado para el byte: {}", byte);
@@ -40,7 +40,7 @@ impl TransactionState {
             b'O' => TransactionState::Accepted,
             b'A' => TransactionState::Aborted,
             b'C' => TransactionState::Commited,
-            _ => panic!("{}", err)
+            _ => panic!("{}", err),
         }
     }
 }
@@ -60,8 +60,14 @@ mod tests {
     #[test]
     fn from_byte_should_return_a_transaction_state_for_each_valid_byte() {
         assert_eq!(TransactionState::from_byte(b'W'), TransactionState::Waiting);
-        assert_eq!(TransactionState::from_byte(b'O'), TransactionState::Accepted);
+        assert_eq!(
+            TransactionState::from_byte(b'O'),
+            TransactionState::Accepted
+        );
         assert_eq!(TransactionState::from_byte(b'A'), TransactionState::Aborted);
-        assert_eq!(TransactionState::from_byte(b'C'), TransactionState::Commited);
+        assert_eq!(
+            TransactionState::from_byte(b'C'),
+            TransactionState::Commited
+        );
     }
-}   
+}

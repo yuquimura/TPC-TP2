@@ -1,24 +1,21 @@
 use std::io::prelude::*;
 use std::iter::Iterator;
 
-use std::{fs::File, io::BufReader};
 use std::collections::HashMap;
+use std::{fs::File, io::BufReader};
 
 use crate::alglobo::transaction::Transaction;
 
-
 pub struct FileIterator {
     reader: BufReader<File>,
-    ended: bool
+    ended: bool,
 }
 
 impl FileIterator {
     /// Funcion destinada a crear una instancia de FileIterator
     /// PRE: la variable path hace referencia a un archivo. La funcion devolvera Err si no se
     /// encuentra al archivo
-    pub fn new(
-        path: &str
-    ) -> Result<FileIterator, String> {
+    pub fn new(path: &str) -> Result<FileIterator, String> {
         if let Ok(file) = File::open(path) {
             return Ok(FileIterator {
                 reader: BufReader::new(file),
@@ -54,14 +51,14 @@ impl Iterator for FileIterator {
         if params.len() < 4 {
             return None;
         }
-        let mut services_info:HashMap<String, f64> = HashMap::new();
-        services_info.insert("Airline".to_string(),params[1].parse::<f64>().unwrap());
-        services_info.insert("Bank".to_string(),params[2].parse::<f64>().unwrap());
-        services_info.insert("Hotel".to_string(),params[3].parse::<f64>().unwrap());
+        let mut services_info: HashMap<String, f64> = HashMap::new();
+        services_info.insert("Airline".to_string(), params[1].parse::<f64>().unwrap());
+        services_info.insert("Bank".to_string(), params[2].parse::<f64>().unwrap());
+        services_info.insert("Hotel".to_string(), params[3].parse::<f64>().unwrap());
 
-        
-
-        Some(Transaction::new(params[0].parse::<u64>().unwrap(), services_info))
-
+        Some(Transaction::new(
+            params[0].parse::<u64>().unwrap(),
+            services_info,
+        ))
     }
 }

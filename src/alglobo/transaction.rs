@@ -1,13 +1,16 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
-use crate::{transaction_messages::{transaction_info::TransactionInfo, transaction_log::TransactionLog}, services::service_name::ServiceName};
+use crate::{
+    services::service_name::ServiceName,
+    transaction_messages::{transaction_info::TransactionInfo, transaction_log::TransactionLog},
+};
 
 use super::{transaction_state::TransactionState, transactionable::Transactionable};
 
 #[allow(dead_code)]
 pub struct Transaction {
     id: u64,
-    services: HashMap<String, (TransactionState, f64)>
+    services: HashMap<String, (TransactionState, f64)>,
 }
 
 impl Transaction {
@@ -18,25 +21,22 @@ impl Transaction {
             .map(|(name, fee)| (name.clone(), (TransactionState::Waiting, fee.clone())))
             .collect();
 
-        Transaction {
-            id,
-            services
-        }
+        Transaction { id, services }
     }
 
     fn update_state(
-        &mut self, 
-        name: String, 
-        state: TransactionState, 
-        pre_states: Vec<TransactionState>, 
-        opt_fee: Option<f64>
+        &mut self,
+        name: String,
+        state: TransactionState,
+        pre_states: Vec<TransactionState>,
+        opt_fee: Option<f64>,
     ) -> bool {
         let service = self
-        .services
-        .get_mut(&name)
-        .expect("[Transaction] Nombre de servicio deberia existir");
+            .services
+            .get_mut(&name)
+            .expect("[Transaction] Nombre de servicio deberia existir");
 
-        let is_valid ;
+        let is_valid;
         if let Some(fee) = opt_fee {
             service.1 = fee;
             is_valid = true;
@@ -54,7 +54,7 @@ impl Transaction {
     fn is_state(&self, state: TransactionState) -> bool {
         for (_, (curr_state, _)) in self.services.clone() {
             if curr_state != state {
-                return false
+                return false;
             }
         }
         true
@@ -73,49 +73,22 @@ impl Transactionable for Transaction {
 
     fn wait(&mut self, name: String, opt_fee: Option<f64>) -> bool {
         let pre_states = vec![];
-        self.update_state(
-            name,
-            TransactionState::Waiting,
-            pre_states,
-            opt_fee
-        )
+        self.update_state(name, TransactionState::Waiting, pre_states, opt_fee)
     }
 
     fn accept(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let pre_states = vec![
-            TransactionState::Waiting
-        ];
-        self.update_state(
-            name,
-            TransactionState::Accepted,
-            pre_states,
-            opt_fee
-        )
+        let pre_states = vec![TransactionState::Waiting];
+        self.update_state(name, TransactionState::Accepted, pre_states, opt_fee)
     }
 
     fn abort(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let pre_states = vec![
-            TransactionState::Waiting,
-            TransactionState::Accepted,
-        ];
-        self.update_state(
-            name,
-            TransactionState::Aborted,
-            pre_states,
-            opt_fee
-        )
+        let pre_states = vec![TransactionState::Waiting, TransactionState::Accepted];
+        self.update_state(name, TransactionState::Aborted, pre_states, opt_fee)
     }
 
     fn commit(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let pre_states = vec![
-            TransactionState::Accepted,
-        ];
-        self.update_state(
-            name,
-            TransactionState::Commited,
-            pre_states,
-            opt_fee
-        )
+        let pre_states = vec![TransactionState::Accepted];
+        self.update_state(name, TransactionState::Commited, pre_states, opt_fee)
     }
 
     fn waiting_services(&self) -> HashMap<String, f64> {
@@ -129,10 +102,7 @@ impl Transactionable for Transaction {
     }
 
     fn not_aborted_services(&self) -> HashMap<String, f64> {
-        let pre_states = vec![
-            TransactionState::Waiting,
-            TransactionState::Accepted
-        ];
+        let pre_states = vec![TransactionState::Waiting, TransactionState::Accepted];
         let mut result = HashMap::new();
         for (name, (state, fee)) in self.services.clone() {
             if pre_states.contains(&state) {
@@ -143,9 +113,7 @@ impl Transactionable for Transaction {
     }
 
     fn accepted_services(&self) -> HashMap<String, f64> {
-        let pre_states = vec![
-            TransactionState::Accepted
-        ];
+        let pre_states = vec![TransactionState::Accepted];
         let mut result = HashMap::new();
         for (name, (state, fee)) in self.services.clone() {
             if pre_states.contains(&state) {
@@ -166,7 +134,7 @@ impl Transactionable for Transaction {
     fn is_any_waiting(&self) -> bool {
         for (_, (state, _)) in self.services.clone() {
             if state == TransactionState::Waiting {
-                return true
+                return true;
             }
         }
         false
@@ -201,7 +169,7 @@ impl Transactionable for Transaction {
             self.id,
             airline_info.clone(),
             hotel_info.clone(),
-            bank_info.clone()
+            bank_info.clone(),
         );
         TransactionInfo::add_padding(&mut log);
         log
@@ -237,7 +205,7 @@ mod tests {
         let services = [airline, bank, hotel];
         let mut transaction = Transaction::new(0, HashMap::from(services));
 
-        transaction.accept(ServiceName::Airline.string_name(),None);
+        transaction.accept(ServiceName::Airline.string_name(), None);
         transaction.accept(ServiceName::Bank.string_name(), None);
 
         assert!(!transaction.is_accepted())
@@ -291,9 +259,20 @@ mod tests {
         transaction.accept(ServiceName::Bank.string_name(), Some(new_bank_fee));
 
         let all_services = transaction.all_services();
-        assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
-        assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
-        assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
+        assert_eq!(
+            all_services
+                .get(&ServiceName::Airline.string_name())
+                .unwrap(),
+            &new_airline_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Hotel.string_name()).unwrap(),
+            &new_hotel_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Bank.string_name()).unwrap(),
+            &new_bank_fee
+        );
 
         assert!(transaction.is_accepted());
     }
@@ -316,9 +295,20 @@ mod tests {
         transaction.abort(ServiceName::Bank.string_name(), Some(new_bank_fee));
 
         let all_services = transaction.all_services();
-        assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
-        assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
-        assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
+        assert_eq!(
+            all_services
+                .get(&ServiceName::Airline.string_name())
+                .unwrap(),
+            &new_airline_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Hotel.string_name()).unwrap(),
+            &new_hotel_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Bank.string_name()).unwrap(),
+            &new_bank_fee
+        );
 
         assert!(transaction.is_aborted());
     }
@@ -341,9 +331,20 @@ mod tests {
         transaction.commit(ServiceName::Bank.string_name(), Some(new_bank_fee));
 
         let all_services = transaction.all_services();
-        assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
-        assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
-        assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
+        assert_eq!(
+            all_services
+                .get(&ServiceName::Airline.string_name())
+                .unwrap(),
+            &new_airline_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Hotel.string_name()).unwrap(),
+            &new_hotel_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Bank.string_name()).unwrap(),
+            &new_bank_fee
+        );
 
         assert!(transaction.is_commited());
     }
@@ -370,9 +371,20 @@ mod tests {
         transaction.wait(ServiceName::Bank.string_name(), Some(new_bank_fee));
 
         let all_services = transaction.all_services();
-        assert_eq!(all_services.get(&ServiceName::Airline.string_name()).unwrap(), &new_airline_fee);
-        assert_eq!(all_services.get(&ServiceName::Hotel.string_name()).unwrap(), &new_hotel_fee);
-        assert_eq!(all_services.get(&ServiceName::Bank.string_name()).unwrap(), &new_bank_fee);
+        assert_eq!(
+            all_services
+                .get(&ServiceName::Airline.string_name())
+                .unwrap(),
+            &new_airline_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Hotel.string_name()).unwrap(),
+            &new_hotel_fee
+        );
+        assert_eq!(
+            all_services.get(&ServiceName::Bank.string_name()).unwrap(),
+            &new_bank_fee
+        );
 
         assert!(!transaction.is_accepted());
         assert!(!transaction.is_aborted());

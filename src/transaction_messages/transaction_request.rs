@@ -3,12 +3,9 @@ use super::transaction_code::TransactionCode;
 pub struct TransactionRequest;
 
 impl TransactionRequest {
-
     #[must_use]
     pub fn size() -> usize {
-        TransactionRequest::build(TransactionCode::Prepare,
-                                  0,
-                                  0.0).len()
+        TransactionRequest::build(TransactionCode::Prepare, 0, 0.0).len()
     }
 
     #[must_use]

@@ -2,7 +2,7 @@
 pub enum ServiceName {
     Airline,
     Hotel,
-    Bank
+    Bank,
 }
 
 #[allow(dead_code)]

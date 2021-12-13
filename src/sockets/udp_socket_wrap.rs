@@ -21,7 +21,10 @@ impl UdpSocketWrap {
         UdpSocketWrap { socket }
     }
 
-    pub fn new_with_addr(opt_timeout: Option<Duration>,addr: String)-> Result<UdpSocketWrap,String>{
+    pub fn new_with_addr(
+        opt_timeout: Option<Duration>,
+        addr: String,
+    ) -> Result<UdpSocketWrap, String> {
         let socket_result = UdpSocket::bind(addr);
         return if let Ok(socket_result) = socket_result {
             let socket = socket_result;
@@ -32,9 +35,7 @@ impl UdpSocketWrap {
             Ok(udp_socket_wrap)
         } else {
             Err("Todo mal".to_string())
-        }
-
-
+        };
     }
     /// # Errors
     ///
@@ -96,8 +97,10 @@ impl UdpSocketReceiver for UdpSocketWrap {
         Ok((res, from_addr))
     }
 
-    fn set_timeout(&mut self, opt_timeout: Option<Duration>){
-        self.socket.set_read_timeout(opt_timeout).expect("[UdpSocketWrap] Set timeout ha fallado");
+    fn set_timeout(&mut self, opt_timeout: Option<Duration>) {
+        self.socket
+            .set_read_timeout(opt_timeout)
+            .expect("[UdpSocketWrap] Set timeout ha fallado");
     }
 }
 

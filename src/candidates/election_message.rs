@@ -39,11 +39,9 @@ impl ElectionMessage {
 
     fn map_code(code: ElectionCode) -> u8 {
         match code {
-            ElectionCode::Alive => ALIVE_BYTE,        
-            ElectionCode::Election => ELECTION_BYTE,            
-            ElectionCode::Leader => LEADER_BYTE,            
-            
+            ElectionCode::Alive => ALIVE_BYTE,
+            ElectionCode::Election => ELECTION_BYTE,
+            ElectionCode::Leader => LEADER_BYTE,
         }
     }
 }
-
