@@ -21,6 +21,8 @@ pub trait Transactionable {
 
     fn not_aborted_services(&self) -> HashMap<String, f64>;
 
+    fn accepted_services(&self) -> HashMap<String, f64>;
+
     fn all_services(&self) -> HashMap<String, f64>;
 
     fn is_any_waiting(&self) -> bool;

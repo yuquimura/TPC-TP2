@@ -142,6 +142,19 @@ impl Transactionable for Transaction {
         result
     }
 
+    fn accepted_services(&self) -> HashMap<String, f64> {
+        let pre_states = vec![
+            TransactionState::Accepted
+        ];
+        let mut result = HashMap::new();
+        for (name, (state, fee)) in self.services.clone() {
+            if pre_states.contains(&state) {
+                result.insert(name, fee);
+            }
+        }
+        result
+    }
+
     fn all_services(&self) -> HashMap<String, f64> {
         let mut result = HashMap::new();
         for (name, (_, fee)) in self.services.clone() {
