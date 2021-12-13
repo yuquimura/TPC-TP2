@@ -119,7 +119,7 @@ impl TransactionManager {
                 .as_ref()
                 .expect("[Transaction Manager] La transaccion actual deberia exitir");
             transaction_id = transaction.get_id();
-            all_services = transaction.all_services();
+            all_services = transaction.not_aborted_services();
         }
         self.send_messages(TransactionCode::Abort, transaction_id, all_services);
         let res = self.wait_update(|opt_transaction| {
@@ -128,6 +128,7 @@ impl TransactionManager {
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
                 .is_aborted()
         });
+        self.send_transaction_logs();
         res.is_ok()
     }
 
@@ -185,6 +186,7 @@ impl TransactionManager {
             let addr = self.services_addrs.get(&name).expect(
                 "[Transaction Manager] La direcci\u{f3}n IP del servicio web deberia existir",
             );
+            println!("[Transaction Manager] Transaccion: {} - Entidad: {} - Operacion: {}", id, name, code);
             self.udp_sender
                 .send_to(&TransactionRequest::build(code, id, fee), addr)
                 .expect(
@@ -203,7 +205,9 @@ impl TransactionManager {
             .as_ref()
             .expect("[Transaction Manager] La transaccion actual deberia exitir");
         let transaction_log = transaction.log();
+        let transaction_id = transaction.get_id();
         for addr in self.replicas_addrs.clone() {
+            println!("[Transaction Manager] Log Transaccion: {} - Addr: {}", transaction_id, addr);
             self.udp_sender
                 .send_to(&transaction_log, &addr)
                 .expect(
@@ -679,5 +683,136 @@ mod tests {
 
         manager.update_current(transaction);
         manager.prepare();
+    }
+
+    #[test]
+    fn it_should_send_log_after_abort_phase() {
+        let id = 0;
+
+        let replicas_addrs = vec![
+            "127.0.0.1:49159",
+            "127.0.0.1:49160",
+            "127.0.0.1:49161",
+        ];
+        let replicas_addrs_clone;
+
+        let airline_addr = "127.0.0.1:49156";
+        let hotel_addr = "127.0.0.1:49157";
+        let bank_addr = "127.0.0.1:49158";
+        let services_addrs_str = &HashMap::from([
+            (airline_addr, ServiceName::Airline.string_name()),
+            (hotel_addr, ServiceName::Hotel.string_name()),
+            (bank_addr, ServiceName::Bank.string_name()),
+        ]);
+
+        let transaction_id = 1;
+        let airline_fee = 100.0;
+        let hotel_fee = 200.0;
+        let bank_fee = 300.0;
+        let mut transaction = Transaction::new(
+            transaction_id,
+            HashMap::from([
+                (ServiceName::Airline.string_name(), airline_fee),
+                (ServiceName::Hotel.string_name(), hotel_fee),
+                (ServiceName::Bank.string_name(), bank_fee),
+            ]),
+        );
+        let n_services = transaction.waiting_services().len();
+
+        transaction.abort(ServiceName::Airline.string_name(), Some(airline_fee));
+        let not_abort_services_addrs = [hotel_addr, bank_addr];
+
+        let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
+
+
+        let mut mock_sender = MockUdpSocketSender::new();
+        let mut mock_receiver = MockUdpSocketReceiver::new();
+        
+        let abort_requests = [
+            TransactionRequest::build(TransactionCode::Abort, transaction_id, hotel_fee),
+            TransactionRequest::build(TransactionCode::Abort, transaction_id, bank_fee),
+        ];
+
+        let mut abort_response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
+        TransactionInfo::add_padding(&mut abort_response);
+        let mut abort_response_clone;
+
+        let mut log_msg = TransactionLog::build(
+            transaction_id,
+            (TransactionState::Aborted, airline_fee),
+            (TransactionState::Aborted, hotel_fee),
+            (TransactionState::Aborted, bank_fee),
+        );
+        TransactionInfo::add_padding(&mut log_msg);
+        let log_msg_clone;
+
+        mock_sender
+            .expect_send_to()
+            .withf(move |buf, addr| 
+                abort_requests.contains(&buf.to_vec()) &&
+                not_abort_services_addrs.contains(&addr)
+            )
+            .times(not_abort_services_addrs.len())
+            .returning(|_, _| Ok(()));
+        
+        abort_response_clone = abort_response.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((abort_response_clone.clone(), hotel_addr.to_string())
+            ));
+        
+        abort_response_clone = abort_response.clone();
+        mock_receiver
+            .expect_recv()
+            .withf(move |_| true)
+            .times(1)
+            .returning(move |_| 
+                Ok((abort_response_clone.clone(), bank_addr.to_string())
+            ));   
+
+        log_msg_clone = log_msg.clone();
+        replicas_addrs_clone = replicas_addrs.clone();
+        mock_sender
+            .expect_send_to()
+            .withf(move |buf, addr| 
+                &buf.to_vec() == &log_msg_clone &&
+                replicas_addrs_clone.contains(&addr)
+            )
+            .times(n_services)
+            .returning(|_, _| Ok(()));
+
+        mock_receiver
+            .expect_recv()
+            .returning(move |_| 
+                Err(SocketError::Timeout)
+            );
+
+        let mut receiver = TransactionReceiver::new(
+            id,
+            Box::new(mock_receiver),
+            &services_addrs_str,
+            curr_transaction.clone()
+        );
+
+        thread::spawn(move || {
+            loop {
+                let _ = receiver.recv();
+            }
+        });
+        
+        let mut manager = TransactionManager::new(
+            id,
+            Box::new(mock_sender),
+            curr_transaction.clone(),
+            &services_addrs_str,
+            &replicas_addrs,
+            Duration::from_secs(1),
+        );
+
+        manager.update_current(transaction);
+        manager.abort();
     }
 }

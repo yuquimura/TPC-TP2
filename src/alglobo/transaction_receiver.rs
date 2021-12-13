@@ -75,6 +75,9 @@ impl TransactionReceiver {
             TransactionCode::Accept => {
                 transaction.accept(service_name.to_string(), None);
             },
+            TransactionCode::Abort => {
+                transaction.abort(service_name.to_string(), None);
+            },
             TransactionCode::Commit => {
                 transaction.commit(service_name.to_string(), None);
             }
@@ -107,7 +110,7 @@ impl TransactionReceiver {
             .expect("[Transaction Receiver] Los pagos deberian ocupar 8 bytes");
         let fee = f64::from_be_bytes(fee_bytes);
 
-        println!("[Transaction Receiver] Actualizar transaccion del servio {}", service_name);
+        println!("[Transaction Receiver] Actualizar transaccion del servicioo {}", service_name);
         println!("[Transaction Receiver] Actualizar transaccion con estado {}", state);
         println!("[Transaction Receiver] Actualizar transaccion con pago {}", fee);
 
