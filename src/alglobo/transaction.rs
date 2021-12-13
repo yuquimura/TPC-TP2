@@ -1,63 +1,63 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
+
+use crate::{transaction_messages::{transaction_info::TransactionInfo, transaction_log::TransactionLog}, services::service_name::ServiceName};
 
 use super::{transaction_state::TransactionState, transactionable::Transactionable};
 
 #[allow(dead_code)]
 pub struct Transaction {
     id: u64,
-    services_info: HashMap<String, f64>,
-    services_state: HashMap<TransactionState, HashSet<String>>,
+    services: HashMap<String, (TransactionState, f64)>
 }
 
 impl Transaction {
     #[must_use]
     pub fn new(id: u64, services_info: HashMap<String, f64>) -> Self {
-        let services_names: HashSet<String> = services_info.keys().cloned().collect();
-        let services_state = HashMap::from([
-            (TransactionState::Waiting, services_names),
-            (TransactionState::Accepted, HashSet::new()),
-            (TransactionState::Aborted, HashSet::new()),
-            (TransactionState::Commited, HashSet::new()),
-        ]);
+        let services = services_info
+            .iter()
+            .map(|(name, fee)| (name.clone(), (TransactionState::Waiting, fee.clone())))
+            .collect();
+
         Transaction {
             id,
-            services_info,
-            services_state,
+            services
         }
     }
 
-    fn update_state(&mut self, name: String, state: TransactionState) {
-        let accepted_services = self.get_mut_state_services(&state);
-        accepted_services.insert(name);
+    fn update_state(
+        &mut self, 
+        name: String, 
+        state: TransactionState, 
+        pre_states: Vec<TransactionState>, 
+        opt_fee: Option<f64>
+    ) -> bool {
+        let service = self
+        .services
+        .get_mut(&name)
+        .expect("[Transaction] Nombre de servicio deberia existir");
+
+        let is_valid ;
+        if let Some(fee) = opt_fee {
+            service.1 = fee;
+            is_valid = true;
+        } else {
+            is_valid = pre_states.contains(&service.0);
+        }
+
+        if is_valid {
+            service.0 = state
+        }
+
+        is_valid
     }
 
     fn is_state(&self, state: TransactionState) -> bool {
-        let services = self.get_state_services(&state);
-        services.len() == self.services_info.len()
-    }
-
-    fn get_state_services(&self, state: &TransactionState) -> &HashSet<String> {
-        let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
-        self.services_state.get(state).expect(&err_msg)
-    }
-
-    fn get_mut_state_services(&mut self, state: &TransactionState) -> &mut HashSet<String> {
-        let err_msg = format!("[Transaccion] Los servicios {} deberian existir", state);
-        self.services_state.get_mut(state).expect(&err_msg)
-    }
-
-    fn remove_service(&mut self, name: &String, from_states: Vec<TransactionState>) -> bool {
-        let mut was_removed = false;
-        for state in from_states {
-            {
-                let services = self.get_mut_state_services(&state);
-                if services.remove(name) {
-                    was_removed = true;
-                    break;
-                }
+        for (_, (curr_state, _)) in self.services.clone() {
+            if curr_state != state {
+                return false
             }
         }
-        was_removed
+        true
     }
 }
 
@@ -72,130 +72,77 @@ impl Transactionable for Transaction {
     }
 
     fn wait(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let is_valid ;
-        if let Some(fee) = opt_fee {
-            let all_states = vec![
-                TransactionState::Waiting,
-                TransactionState::Accepted,
-                TransactionState::Aborted,
-                TransactionState::Commited,
-            ];
-            self.remove_service(&name, all_states);
-            let curr_fee = self
-                .services_info
-                .get_mut(&name)
-                .expect("[Transaction] El servicio deberia existir");
-            *curr_fee = fee;
-            is_valid = true;
-        } else {
-            is_valid = false;
-        }
-        if is_valid {
-            self.update_state(name, TransactionState::Waiting);
-        }
-        is_valid
+        let pre_states = vec![];
+        self.update_state(
+            name,
+            TransactionState::Waiting,
+            pre_states,
+            opt_fee
+        )
     }
 
     fn accept(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let is_valid ;
-        if let Some(fee) = opt_fee {
-            let all_states = vec![
-                TransactionState::Waiting,
-                TransactionState::Accepted,
-                TransactionState::Aborted,
-                TransactionState::Commited,
-            ];
-            self.remove_service(&name, all_states);
-            let curr_fee = self
-                .services_info
-                .get_mut(&name)
-                .expect("[Transaction] El servicio deberia existir");
-            *curr_fee = fee;
-            is_valid = true;
-        } else {
-            is_valid = self.remove_service(&name, vec![TransactionState::Waiting]);
-        }
-        if is_valid {
-            self.update_state(name, TransactionState::Accepted);
-        }
-        is_valid
+        let pre_states = vec![
+            TransactionState::Waiting
+        ];
+        self.update_state(
+            name,
+            TransactionState::Accepted,
+            pre_states,
+            opt_fee
+        )
     }
 
     fn abort(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let is_valid;
-        if let Some(fee) = opt_fee {
-            let all_states = vec![
-                TransactionState::Waiting,
-                TransactionState::Accepted,
-                TransactionState::Aborted,
-                TransactionState::Commited,
-            ];
-            self.remove_service(&name, all_states);
-            let curr_fee = self
-                .services_info
-                .get_mut(&name)
-                .expect("[Transaction] El servicio deberia existir");
-            *curr_fee = fee;
-            is_valid = true;
-        } else {
-            let all_states = vec![
-                TransactionState::Waiting,
-                TransactionState::Accepted,
-            ];
-            is_valid = self.remove_service(&name, all_states);
-        }
-        if is_valid {
-            self.update_state(name, TransactionState::Aborted);
-        }
-        is_valid
+        let pre_states = vec![
+            TransactionState::Waiting,
+            TransactionState::Accepted,
+        ];
+        self.update_state(
+            name,
+            TransactionState::Aborted,
+            pre_states,
+            opt_fee
+        )
     }
 
     fn commit(&mut self, name: String, opt_fee: Option<f64>) -> bool {
-        let is_valid;
-        if let Some(fee) = opt_fee {
-            let all_states = vec![
-                TransactionState::Waiting,
-                TransactionState::Accepted,
-                TransactionState::Aborted,
-                TransactionState::Commited,
-            ];
-            self.remove_service(&name, all_states);
-            let curr_fee = self
-                .services_info
-                .get_mut(&name)
-                .expect("[Transaction] El servicio deberia existir");
-            *curr_fee = fee;
-            is_valid = true;
-        } else {
-            is_valid = self.remove_service(&name, vec![TransactionState::Waiting]);
-        }
-        if is_valid {
-            self.update_state(name, TransactionState::Commited);
-        }
-        is_valid
+        let pre_states = vec![
+            TransactionState::Accepted,
+        ];
+        self.update_state(
+            name,
+            TransactionState::Commited,
+            pre_states,
+            opt_fee
+        )
     }
 
     fn waiting_services(&self) -> HashMap<String, f64> {
-        let waiting_services = self.get_state_services(&TransactionState::Waiting);
-
-        let mut res = HashMap::new();
-        for name in waiting_services.iter() {
-            let fee = self
-                .services_info
-                .get(name)
-                .expect("[Transaction] Nombre de servicee deberia existir");
-            res.insert(name.clone(), *fee);
+        let mut result = HashMap::new();
+        for (name, (state, fee)) in self.services.clone() {
+            if state == TransactionState::Waiting {
+                result.insert(name, fee);
+            }
         }
-        res
+        result
     }
 
     fn all_services(&self) -> HashMap<String, f64> {
-        self.services_info.clone()
+        let mut result = HashMap::new();
+        for (name, (_, fee)) in self.services.clone() {
+            result.insert(name, fee);
+        }
+        result
     }
 
     fn is_any_waiting(&self) -> bool {
-        let services = self.get_state_services(&TransactionState::Waiting);
-        services.len() > 0
+        for (_, (state, _)) in self.services.clone() {
+            if state == TransactionState::Waiting {
+                return true
+            }
+        }
+        false
     }
 
     fn is_accepted(&self) -> bool {
@@ -208,6 +155,29 @@ impl Transactionable for Transaction {
 
     fn is_commited(&self) -> bool {
         self.is_state(TransactionState::Commited)
+    }
+
+    fn log(&self) -> Vec<u8> {
+        let airline_info = self
+            .services
+            .get(&ServiceName::Airline.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let hotel_info = self
+            .services
+            .get(&ServiceName::Hotel.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let bank_info = self
+            .services
+            .get(&ServiceName::Bank.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let mut log = TransactionLog::build(
+            self.id,
+            airline_info.clone(),
+            hotel_info.clone(),
+            bank_info.clone()
+        );
+        TransactionInfo::add_padding(&mut log);
+        log
     }
 }
 

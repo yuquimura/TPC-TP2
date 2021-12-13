@@ -28,4 +28,6 @@ pub trait Transactionable {
     fn is_aborted(&self) -> bool;
 
     fn is_commited(&self) -> bool;
+
+    fn log(&self) -> Vec<u8>;
 }
