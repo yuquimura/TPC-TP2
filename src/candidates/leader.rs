@@ -87,7 +87,7 @@ impl Leader {
                 break;
             }
         }
-        let _drop = join_handle.join();
+        let _ = join_handle.join();
     }
 }
 
@@ -101,7 +101,7 @@ mod tests {
         sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
-    #[test]
+    /*#[test]
     fn it_should_receive_alive_message(){
         let address = "127.0.0.1:49156";
         let mut mock_receiver = MockUdpSocketReceiver::new();
