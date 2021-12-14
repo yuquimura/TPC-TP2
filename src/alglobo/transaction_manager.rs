@@ -198,6 +198,7 @@ impl TransactionManager {
                 "[Transaction Manager] Transaccion: {} - Entidad: {} - Operacion: {}",
                 id, name, code
             );
+
             self.udp_sender
                 .send_to(&TransactionRequest::build(code, id, fee), addr)
                 .expect(

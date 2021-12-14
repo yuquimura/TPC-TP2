@@ -37,6 +37,7 @@ fn main() {
         }
 
         let mut candidate = Candidate::new(Box::new(socket_data_recv), Box::new(socket_data_send), port_candidate.to_string(), vec_addr, EMPTY.to_string(), "".to_string());
+        println!("El nodo que elegi para el candidato {}",port_candidate);
         candidate.start_candidate();
     }
     else if  input.as_ref().clone().unwrap() == "a" {

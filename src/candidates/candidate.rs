@@ -173,7 +173,7 @@ impl Candidate {
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
         for port in 49152..49352 {
-            let socket_info_data_new = UdpSocketWrap::new_with_addr(None, port.to_string());
+            let socket_info_data_new = UdpSocketWrap::new_with_addr(None, DEFAULT_IP.to_string()+port.to_string().as_str());
             if let Ok(socket_new_aux) = socket_info_data_new {
                 socket_data_recv = socket_new_aux;
                 if let Ok(socket_aux) = socket_data_recv.try_clone() {
@@ -234,7 +234,7 @@ impl Candidate {
             first_trans_cond.clone(),
             services_addrs_str,
             vec,
-            Default::default(),
+            Duration::from_millis(1000),
         );
         let id = transaction_manager.process(None);
         leader.start_leader(transaction_manager, id);

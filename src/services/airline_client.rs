@@ -49,7 +49,7 @@ impl CommonClient for Airline {
             let transaction_id = u64::from_be_bytes(id_bytes);
             let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
             TransactionInfo::add_padding(&mut response);
-            let _ = self.socket_sender.send_to(&*response, &addr_to_answer);
+            let _ = self.socket_sender.send_to(&response, &addr_to_answer);
         } else if code == TransactionRequest::map_transaction_code(TransactionCode::Abort) {
             println!("Respondo un ABORT de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
@@ -63,7 +63,7 @@ impl CommonClient for Airline {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum -= fee_value;
-            let _ = self.socket_sender.send_to(&*response, &addr_to_answer);
+            let _ = self.socket_sender.send_to(&response, &addr_to_answer);
         } else {
             println!("Respondo un mensaje Criptico de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
@@ -77,7 +77,7 @@ impl CommonClient for Airline {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum += fee_value;
-            let _ = self.socket_sender.send_to(&*response, &addr_to_answer);
+            let _ = self.socket_sender.send_to(&response, &addr_to_answer);
         }
     }
 
@@ -90,10 +90,12 @@ impl CommonClient for Airline {
     }
 
     fn process_one_transaction(&mut self) -> Result<i64, String> {
+
         let res = self.socket_receiver.recv(TransactionRequest::size());
         let res_vec = res.unwrap();
         let res_vector = res_vec.0;
         let addr_to_answer = res_vec.1;
+        print!("El puerto que me llega es{}",addr_to_answer);
         self.answer_message(res_vector,addr_to_answer);
         Ok(0)
     }
