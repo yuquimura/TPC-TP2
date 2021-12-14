@@ -1,6 +1,7 @@
 use std::ops::Range;
 
 pub static EMPTY: &str = "EMPTY";
+pub static SLEEP: u64 = 1;
 pub static DEFAULT_IP: &str = "127.0.0.1:";
 // addr de los servicios
 pub static VEC_PORT_DATA: Range<i32> = 49152..49155;

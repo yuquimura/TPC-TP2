@@ -44,7 +44,7 @@ impl TransactionResponse {
             TransactionCode::Accept => ACCEPT_BYTE,
             TransactionCode::Abort => ABORT_BYTE,
             TransactionCode::Commit => COMMIT_BYTE,
-            _ => panic!("{}", err_msg),
+            TransactionCode::Prepare => panic!("{}", err_msg),
         }
     }
 }

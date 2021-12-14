@@ -3,6 +3,7 @@ use std::cmp::max;
 pub struct TransactionInfo;
 
 impl TransactionInfo {
+    #[must_use]
     pub const fn size() -> usize {
         36
     }

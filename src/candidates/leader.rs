@@ -11,6 +11,7 @@ use std::sync::RwLock;
 use std::thread;
 use std::thread::sleep;
 use std::time::Duration;
+use crate::candidates::constants::SLEEP;
 
 #[allow(dead_code)]
 pub struct Leader {
@@ -70,7 +71,7 @@ impl Leader {
                 while !reader.ended() {
                     if let Some(transaction) = reader.next() {
                         if transaction.get_id() > start_line {
-                            sleep(Duration::from_secs(1));
+                            sleep(Duration::from_secs(SLEEP));
                             transaction_manager.process(Some(transaction));
                         }
                     }

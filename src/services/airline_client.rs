@@ -9,6 +9,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::mem::size_of;
+use crate::services::constants::PERCENTAGE_ERROR;
 
 #[allow(dead_code)]
 pub struct Airline {
@@ -57,7 +58,7 @@ impl CommonClient for Airline {
             }
             let mut rng = rand::thread_rng();
             let n: u32 = rng.gen_range(0..10);
-            if n < 2 {
+            if n < PERCENTAGE_ERROR {
                 let mut response =
                     TransactionResponse::build(TransactionCode::Abort, transaction_id);
                 TransactionInfo::add_padding(&mut response);
