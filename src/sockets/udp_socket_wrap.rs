@@ -103,7 +103,7 @@ impl UdpSocketReceiver for UdpSocketWrap {
     fn set_timeout(&mut self, opt_timeout: Option<Duration>) {
         self.socket
             .set_read_timeout(opt_timeout)
-            .expect("[UdpSocketWrap] Set timeout ha fallado");
+            .expect("[UdpSocketWrap] Set timeout ha fallado ");
     }
 }
 
