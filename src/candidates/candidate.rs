@@ -56,7 +56,7 @@ impl Candidate {
             return;
         }
         let message = ElectionMessage::build(ElectionCode::Alive);
-        let _ = self
+        let _drop = self
             .udp_sender
             .send_to(message.as_slice(), &self.leader_address);
         self.udp_receiver
@@ -68,7 +68,7 @@ impl Candidate {
                         .set_timeout(Some(Duration::from_millis(10000)));
                     if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
                         let his_address = response.1;
-                        let _ = self.udp_sender.send_to(message.as_slice(), &his_address);
+                        let _drop = self.udp_sender.send_to(message.as_slice(), &his_address);
                         self.im_the_leader = self.start_election(&his_address);
                         if self.im_the_leader {
                             //soy el lider
@@ -79,7 +79,7 @@ impl Candidate {
                 //contemplar que pasa cuando llega un mensaje de election y tengo que contestar OK, como se que no soy el lider?
                 b'e' => {
                     let his_address = value.1;
-                    let _ = self.udp_sender.send_to(message.as_slice(), &his_address);
+                    let _drop = self.udp_sender.send_to(message.as_slice(), &his_address);
                     self.im_the_leader = self.start_election(&his_address);
                     if self.im_the_leader {
                         //soy el lider
@@ -135,7 +135,7 @@ impl Candidate {
                 let message = ElectionMessage::build(ElectionCode::Election);
                 let his_address_vect: Vec<&str> = his_address.split(':').collect();
                 let address_to_send = his_address_vect[0].to_string() + ":" + port;
-                let _ = self
+                let _drop = self
                     .udp_sender
                     .send_to(message.as_slice(), &address_to_send);
                 self.udp_receiver
@@ -154,7 +154,7 @@ impl Candidate {
             let message = ElectionMessage::build(ElectionCode::Leader);
             let his_adr_vect: Vec<&str> = his_address.split(':').collect();
             let adr_to_send = his_adr_vect[0].to_string() + port;
-            let _ = self.udp_sender.send_to(message.as_slice(), &adr_to_send);
+            let _drop = self.udp_sender.send_to(message.as_slice(), &adr_to_send);
         }
         self.leader_port = self.my_port.clone();
     }
@@ -200,7 +200,7 @@ impl Candidate {
             );
 
             loop {
-                let _ = transaction_receiver.recv();
+                let _drop = transaction_receiver.recv();
             }
         });
         loop {

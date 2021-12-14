@@ -391,7 +391,7 @@ mod tests {
         );
 
         thread::spawn(move || loop {
-            let _ = receiver.recv();
+            let _drop = receiver.recv();
         });
 
         let mut manager = TransactionManager::new(
@@ -503,7 +503,7 @@ mod tests {
         );
 
         thread::spawn(move || loop {
-            let _ = receiver.recv();
+            let _drop = receiver.recv();
         });
 
         let mut manager = TransactionManager::new(
@@ -621,7 +621,7 @@ mod tests {
         );
 
         thread::spawn(move || loop {
-            let _ = receiver.recv();
+            let _drop = receiver.recv();
         });
 
         let mut manager = TransactionManager::new(
@@ -741,7 +741,7 @@ mod tests {
         );
 
         thread::spawn(move || loop {
-            let _ = receiver.recv();
+            let _drop = receiver.recv();
         });
 
         let mut manager = TransactionManager::new(
@@ -864,7 +864,7 @@ mod tests {
         );
 
         thread::spawn(move || loop {
-            let _ = receiver.recv();
+            let _drop = receiver.recv();
         });
 
         let mut manager = TransactionManager::new(

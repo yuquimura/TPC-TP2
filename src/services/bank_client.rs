@@ -21,6 +21,7 @@ pub struct Bank {
     old_responses: HashMap<u64, bool>,
 }
 impl Bank {
+    #[must_use]
     pub fn new(
         socket_receiver: Box<dyn UdpSocketReceiver + Send>,
         socket_sender: Box<dyn UdpSocketSender + Send>,
@@ -39,7 +40,7 @@ impl Bank {
 impl CommonClient for Bank {
     fn answer_message(&mut self, vector: Vec<u8>, addr_to_answer: String) {
         let code = vector[0];
-        let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
+        let id_bytes: [u8; size_of::<u64>()] = vector[1..=size_of::<u64>()]
             .try_into()
             .expect("[Client] Los ids deberian ocupar 8 bytes");
         let transaction_id = u64::from_be_bytes(id_bytes);
@@ -49,13 +50,13 @@ impl CommonClient for Bank {
                     let mut response =
                         TransactionResponse::build(TransactionCode::Accept, transaction_id);
                     TransactionInfo::add_padding(&mut response);
-                    let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+                    let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
                     return;
                 }
                 let mut response =
                     TransactionResponse::build(TransactionCode::Abort, transaction_id);
                 TransactionInfo::add_padding(&mut response);
-                let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+                let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
             }
             let mut rng = rand::thread_rng();
             let n: u32 = rng.gen_range(0..10);
@@ -63,13 +64,13 @@ impl CommonClient for Bank {
                 let mut response =
                     TransactionResponse::build(TransactionCode::Abort, transaction_id);
                 TransactionInfo::add_padding(&mut response);
-                let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+                let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
                 self.old_responses.insert(transaction_id, false);
                 return;
             }
             let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
             TransactionInfo::add_padding(&mut response);
-            let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+            let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
             self.old_responses.insert(transaction_id, true);
         } else if code == TransactionRequest::map_transaction_code(TransactionCode::Abort) {
             let mut response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
@@ -79,12 +80,8 @@ impl CommonClient for Bank {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum -= fee_value;
-            let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+            let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
         } else {
-            let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
-                .try_into()
-                .expect("[Client] Los ids deberian ocupar 8 bytes");
-            let transaction_id = u64::from_be_bytes(id_bytes);
             let mut response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
@@ -92,16 +89,19 @@ impl CommonClient for Bank {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum += fee_value;
-            let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+            let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
         }
     }
 
     fn start_client(&mut self) {
         loop {
-            let _ = self.process_one_transaction();
+            let _drop = self.process_one_transaction();
         }
     }
 
+    /// # Errors
+    ///
+    /// It wont return error if the `socket_receiver.recv` doesnt return error
     fn process_one_transaction(&mut self) -> Result<i64, String> {
         let res = self.socket_receiver.recv(TransactionRequest::size());
         let res_vec = res.unwrap();
@@ -162,7 +162,7 @@ mod tests {
             bank_addr.to_string(),
         );
 
-        let _ = bank.process_one_transaction();
+        let _drop = bank.process_one_transaction();
     }
 
     #[test]
@@ -196,7 +196,7 @@ mod tests {
             bank_addr.to_string(),
         );
 
-        let _ = bank.process_one_transaction();
+        let _drop = bank.process_one_transaction();
     }
 
     #[test]
@@ -231,7 +231,7 @@ mod tests {
             bank_addr.to_string(),
         );
 
-        let _ = bank.process_one_transaction();
+        let _drop = bank.process_one_transaction();
     }
 
     #[test]
@@ -266,7 +266,7 @@ mod tests {
             bank_addr.to_string(),
         );
 
-        let _ = bank.process_one_transaction();
+        let _drop = bank.process_one_transaction();
         assert_eq!(bank.fee_sum, 100.0)
     }
 }

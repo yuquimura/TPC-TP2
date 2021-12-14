@@ -12,7 +12,9 @@ pub struct FileIterator {
 }
 
 impl FileIterator {
-    /// Funcion destinada a crear una instancia de FileIterator
+    /// Funcion destinada a crear una instancia de `FileIterator`
+    /// # Errors:
+    /// Arroja error si el archivo no existe
     /// PRE: la variable path hace referencia a un archivo. La funcion devolvera Err si no se
     /// encuentra al archivo
     pub fn new(path: &str) -> Result<FileIterator, String> {
@@ -26,6 +28,7 @@ impl FileIterator {
     }
 
     /// La funcion devuelve el atributo ended
+    #[must_use]
     pub fn ended(&self) -> bool {
         self.ended
     }
@@ -35,7 +38,9 @@ impl Iterator for FileIterator {
     type Item = Transaction;
 
     /// Implementacion del metodo next de la interfaz Iterador, para la clase
-    /// FileIterator
+    /// `FileIterator`
+    /// #Errors
+    /// Arroja error si el archivo termino
     fn next(&mut self) -> Option<Transaction> {
         let mut line = String::new();
         let len = self

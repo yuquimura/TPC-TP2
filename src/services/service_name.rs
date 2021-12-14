@@ -7,6 +7,7 @@ pub enum ServiceName {
 
 #[allow(dead_code)]
 impl ServiceName {
+    #[must_use]
     pub fn byte_code(&self) -> u8 {
         match *self {
             Self::Airline => b'A',
@@ -14,7 +15,7 @@ impl ServiceName {
             Self::Bank => b'B',
         }
     }
-
+    #[must_use]
     pub fn string_name(&self) -> String {
         match *self {
             Self::Airline => "Airline".to_string(),

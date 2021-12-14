@@ -21,6 +21,9 @@ impl UdpSocketWrap {
         UdpSocketWrap { socket }
     }
 
+    /// # Errors
+    ///
+    /// Devuelve error si no fue posible inicializar un socket con esa addr
     pub fn new_with_addr(
         opt_timeout: Option<Duration>,
         addr: String,

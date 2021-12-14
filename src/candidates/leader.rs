@@ -42,7 +42,7 @@ impl Leader {
                 b'v' => {
                     let message = ElectionMessage::build(ElectionCode::Alive);
                     let his_address = response.1.clone();
-                    let _ = self.udp_sender.send_to(message.as_slice(), &his_address);
+                    let _drop = self.udp_sender.send_to(message.as_slice(), &his_address);
                 }
                 b'e' => {
                     let his_address = response.1.clone();
@@ -50,7 +50,7 @@ impl Leader {
                         let message = ElectionMessage::build(ElectionCode::Leader);
                         let his_address_vect: Vec<&str> = his_address.split(':').collect();
                         let address_to_send = his_address_vect[0].to_string() + &port.to_string();
-                        let _ = self
+                        let _drop = self
                             .udp_sender
                             .send_to(message.as_slice(), &address_to_send);
                     }
@@ -87,13 +87,13 @@ impl Leader {
                 break;
             }
         }
-        let _ = join_handle.join();
+        let _drop = join_handle.join();
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    /*use super::*;
     use crate::candidates::candidate::Candidate;
     use crate::{
         candidates::election_code::ElectionCode,
@@ -101,7 +101,7 @@ mod tests {
         sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
-    /*#[test]
+    #[test]
     fn it_should_receive_alive_message(){
         let address = "127.0.0.1:49156";
         let mut mock_receiver = MockUdpSocketReceiver::new();
