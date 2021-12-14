@@ -5,6 +5,8 @@ use crate::transaction_messages::transaction_code::TransactionCode;
 use crate::transaction_messages::transaction_info::TransactionInfo;
 use crate::transaction_messages::transaction_request::TransactionRequest;
 use crate::transaction_messages::transaction_response::TransactionResponse;
+use rand::Rng;
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::mem::size_of;
 
@@ -14,6 +16,7 @@ pub struct Airline {
     socket_sender: Box<dyn UdpSocketSender + Send>,
     pub(crate) fee_sum: f64,
     addr: String,
+    old_responses: HashMap<u64, bool>,
 }
 impl Airline {
     pub fn new(
@@ -26,31 +29,48 @@ impl Airline {
             socket_receiver,
             fee_sum: 0.0,
             addr,
+            old_responses: HashMap::new(),
         }
     }
 }
 
 impl CommonClient for Airline {
-    fn answer_message(&mut self, vector: Vec<u8>, addr_to_answer:String) {
-        /*let mut rng = rand::thread_rng();
-        if rng > 0.2{
-            let mut response= TransactionResponse::build(TransactionCode::Abort,
-                                                      transaction_id);
-            let addr = self.addr.clone();
-            let _ =self.socket_sender.send_to(&*response, &addr);
-        }*/
+    fn answer_message(&mut self, vector: Vec<u8>, addr_to_answer: String) {
         let code = vector[0];
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare) {
-            println!("Soy buena aerolinea y respondo el Prepare");
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
+            if let Some(_response) = self.old_responses.get(&transaction_id) {
+                if let Some(_value) = self.old_responses.get(&transaction_id) {
+                    let mut response =
+                        TransactionResponse::build(TransactionCode::Accept, transaction_id);
+                    TransactionInfo::add_padding(&mut response);
+                    let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+                    return;
+                }
+                let mut response =
+                    TransactionResponse::build(TransactionCode::Abort, transaction_id);
+                TransactionInfo::add_padding(&mut response);
+                let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+            }
+            let mut rng = rand::thread_rng();
+            let n: u32 = rng.gen_range(0..10);
+            if n < 2 {
+                let mut response =
+                    TransactionResponse::build(TransactionCode::Abort, transaction_id);
+                TransactionInfo::add_padding(&mut response);
+                let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+                self.old_responses.insert(transaction_id, false);
+                return;
+            }
             let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let _ = self.socket_sender.send_to(&response, &addr_to_answer);
+            self.old_responses.insert(transaction_id, true);
+            return;
         } else if code == TransactionRequest::map_transaction_code(TransactionCode::Abort) {
-            println!("Respondo un ABORT de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
@@ -64,7 +84,6 @@ impl CommonClient for Airline {
             self.fee_sum -= fee_value;
             let _ = self.socket_sender.send_to(&response, &addr_to_answer);
         } else {
-            println!("Respondo un mensaje Criptico de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
@@ -80,21 +99,18 @@ impl CommonClient for Airline {
         }
     }
 
-    fn start_client(&mut self){
+    fn start_client(&mut self) {
         loop {
-            println!("voy a procesar una transaccion");
-            let _ =self.process_one_transaction();
+            let _ = self.process_one_transaction();
         }
-
     }
 
     fn process_one_transaction(&mut self) -> Result<i64, String> {
-
         let res = self.socket_receiver.recv(TransactionRequest::size());
         let res_vec = res.unwrap();
         let res_vector = res_vec.0;
         let addr_to_answer = res_vec.1;
-        self.answer_message(res_vector,addr_to_answer);
+        self.answer_message(res_vector, addr_to_answer);
         Ok(0)
     }
 

@@ -27,7 +27,6 @@ impl UdpSocketWrap {
     ) -> Result<UdpSocketWrap, String> {
         let socket_result = UdpSocket::bind(addr);
         return if let Ok(socket_result) = socket_result {
-
             let socket = socket_result;
             socket
                 .set_read_timeout(opt_timeout)

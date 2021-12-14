@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Condvar, Mutex};
-use std::thread;
-use std::time::Duration;
 use crate::alglobo::transaction_manager::TransactionManager;
 use crate::alglobo::transaction_receiver::TransactionReceiver;
 use crate::alglobo::types::CurrentTransaction;
@@ -16,6 +12,10 @@ use crate::services::service_name::ServiceName;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 use crate::sockets::udp_socket_wrap::UdpSocketWrap;
+use std::collections::HashMap;
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread;
+use std::time::Duration;
 
 #[allow(dead_code)]
 pub struct Candidate {
@@ -52,7 +52,7 @@ impl Candidate {
 
     pub fn send_to(&mut self) {
         if self.leader_port == EMPTY {
-            self.im_the_leader= self.start_election(&DEFAULT_IP.to_string());
+            self.im_the_leader = self.start_election(&DEFAULT_IP.to_string());
             return;
         }
         let message = ElectionMessage::build(ElectionCode::Alive);
@@ -130,13 +130,11 @@ impl Candidate {
 
     fn start_election(&mut self, his_address: &String) -> bool {
         let mut im_the_leader = true;
-        println!("Voy a elegir eligiendo");
         for port in self.possible_ports.iter() {
-            println!("Estoy eligiendo");
             if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap() {
                 let message = ElectionMessage::build(ElectionCode::Election);
                 let his_address_vect: Vec<&str> = his_address.split(':').collect();
-                let address_to_send = his_address_vect[0].to_string()+":" + port;
+                let address_to_send = his_address_vect[0].to_string() + ":" + port;
                 let _ = self
                     .udp_sender
                     .send_to(message.as_slice(), &address_to_send);
@@ -148,7 +146,6 @@ impl Candidate {
                 }
             }
         }
-        println!("Termine de elegir");
         return im_the_leader;
     }
 
@@ -170,14 +167,19 @@ impl Candidate {
             Mutex::new(Some(Box::new(true_first_transaction))),
             Condvar::new(),
         ));
+        let mut port_transaction = 0;
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
         for port in 49152..49352 {
-            let socket_info_data_new = UdpSocketWrap::new_with_addr(Some(Duration::from_millis(1000)), DEFAULT_IP.to_string()+port.to_string().as_str());
+            let socket_info_data_new = UdpSocketWrap::new_with_addr(
+                Some(Duration::from_millis(1000)),
+                DEFAULT_IP.to_string() + port.to_string().as_str(),
+            );
             if let Ok(socket_new_aux) = socket_info_data_new {
                 socket_data_recv = socket_new_aux;
                 if let Ok(socket_aux) = socket_data_recv.try_clone() {
                     socket_data_send = socket_aux;
+                    port_transaction = port;
                     break;
                 }
             }
@@ -197,10 +199,9 @@ impl Candidate {
                 true_first_trans_cond,
             );
 
-            loop{
-                let _ =transaction_receiver.recv();
+            loop {
+                let _ = transaction_receiver.recv();
             }
-
         });
         loop {
             self.send_to();
@@ -232,16 +233,13 @@ impl Candidate {
             (HOTEL_ADDR, ServiceName::Hotel.string_name()),
             (BANK_ADDR, ServiceName::Bank.string_name()),
         ]);
-        for (key, value) in services_addrs_str {
-            println!("{}: {}", key, value);
-        }
-        let mut vec_addr: Vec<String> = vec![DEFAULT_IP.to_string()+"49353"];
+        let mut vec_addr: Vec<String> = vec![DEFAULT_IP.to_string() + "49353"];
         for port in VEC_PORT_DATA.clone() {
-            vec_addr.push(DEFAULT_IP.to_string()+port.to_string().as_str());
+            vec_addr.push(DEFAULT_IP.to_string() + port.to_string().as_str());
         }
         let vec = &vec_addr;
         let mut transaction_manager = TransactionManager::new(
-            0,
+            port_transaction,
             Box::new(socket_data_send),
             first_trans_cond.clone(),
             services_addrs_str,

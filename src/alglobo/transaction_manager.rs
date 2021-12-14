@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
+use crate::candidates::constants::DEFAULT_IP;
 use crate::{
     sockets::udp_socket_sender::UdpSocketSender,
     transaction_messages::{
@@ -103,10 +104,10 @@ impl TransactionManager {
         }
         self.send_messages(TransactionCode::Prepare, transaction_id, waiting_services);
         let res = self.wait_update(|opt_transaction| {
-            opt_transaction
+            !opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
-                .is_any_waiting()
+                .is_accepted()
         });
         self.send_transaction_logs();
         res.is_ok()
@@ -217,7 +218,11 @@ impl TransactionManager {
             .expect("[Transaction Manager] La transaccion actual deberia exitir");
         let transaction_log = transaction.log();
         let transaction_id = transaction.get_id();
+        let my_addr = DEFAULT_IP.to_string() + self.id.to_string().as_str();
         for addr in self.replicas_addrs.clone() {
+            if addr == my_addr {
+                continue;
+            }
             println!(
                 "[Transaction Manager] Log Transaccion: {} - Addr: {}",
                 transaction_id, addr

@@ -12,7 +12,6 @@ impl MessageReceiver {
         let listener = TcpListener::bind(IP).unwrap();
 
         for stream in listener.incoming() {
-            println!("Cliente conectado");
             let mut reader = BufReader::new(stream.unwrap());
             thread::spawn(move || {
                 //Aca deberiamos pasarle la funcion por parametro.
