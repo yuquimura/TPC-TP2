@@ -32,7 +32,7 @@ impl Airline {
 }
 
 impl CommonClient for Airline {
-    fn answer_message(&mut self, vector: Vec<u8>) {
+    fn answer_message(&mut self, vector: Vec<u8>, addr_to_answer:String) {
         /*let mut rng = rand::thread_rng();
         if rng > 0.2{
             let mut response= TransactionResponse::build(TransactionCode::Abort,
@@ -42,15 +42,16 @@ impl CommonClient for Airline {
         }*/
         let code = vector[0];
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare) {
+            println!("Respondo un prepare de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
             let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
             TransactionInfo::add_padding(&mut response);
-            let addr = self.addr.clone();
-            let _ = self.socket_sender.send_to(&*response, &addr);
+            let _ = self.socket_sender.send_to(&*response, &addr_to_answer);
         } else if code == TransactionRequest::map_transaction_code(TransactionCode::Abort) {
+            println!("Respondo un ABORT de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
@@ -62,9 +63,9 @@ impl CommonClient for Airline {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum -= fee_value;
-            let addr = self.addr.clone();
-            let _ = self.socket_sender.send_to(&*response, &addr);
+            let _ = self.socket_sender.send_to(&*response, &addr_to_answer);
         } else {
+            println!("Respondo un mensaje Criptico de {}",addr_to_answer);
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
@@ -76,8 +77,7 @@ impl CommonClient for Airline {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum += fee_value;
-            let addr = self.addr.clone();
-            let _ = self.socket_sender.send_to(&*response, &addr);
+            let _ = self.socket_sender.send_to(&*response, &addr_to_answer);
         }
     }
 
@@ -91,8 +91,10 @@ impl CommonClient for Airline {
 
     fn process_one_transaction(&mut self) -> Result<i64, String> {
         let res = self.socket_receiver.recv(TransactionRequest::size());
-        let res_vec = res.unwrap().0;
-        self.answer_message(res_vec);
+        let res_vec = res.unwrap();
+        let res_vector = res_vec.0;
+        let addr_to_answer = res_vec.1;
+        self.answer_message(res_vector,addr_to_answer);
         Ok(0)
     }
 

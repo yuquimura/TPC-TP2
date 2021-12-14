@@ -1,7 +1,7 @@
 use std::thread;
 use std::thread::spawn;
 use tp::sockets::udp_socket_wrap::UdpSocketWrap;
-use tp::candidates::constants::{VEC_PORT_INFO, EMPTY, HOTEL_ADDR, BANK_ADDR, AIRLINE_ADDR};
+use tp::candidates::constants::{VEC_PORT_INFO, EMPTY, HOTEL_ADDR, BANK_ADDR, AIRLINE_ADDR, DEFAULT_IP};
 use tp::candidates::candidate::Candidate;
 use input_reader::get_input;
 use tp::services::airline_client::Airline;
@@ -22,9 +22,10 @@ fn main() {
         let mut vec_addr: Vec<String> = vec!["49353".to_string()];
         for port in VEC_PORT_INFO.clone() {
             vec_addr.push(port.to_string().clone());
+
         }
         for port in VEC_PORT_INFO.clone() {
-            let socket_info_data_new = UdpSocketWrap::new_with_addr(None, port.to_string());
+            let socket_info_data_new = UdpSocketWrap::new_with_addr(None, DEFAULT_IP.to_string()+ port.to_string().as_str());
             if let Ok(socket_new_aux) = socket_info_data_new {
                 socket_data_recv = socket_new_aux;
                 if let Ok(socket_aux) = socket_data_recv.try_clone() {
@@ -36,7 +37,6 @@ fn main() {
         }
 
         let mut candidate = Candidate::new(Box::new(socket_data_recv), Box::new(socket_data_send), port_candidate.to_string(), vec_addr, EMPTY.to_string(), "".to_string());
-        println!("Voy a inicializar al candidato");
         candidate.start_candidate();
     }
     else if  input.as_ref().clone().unwrap() == "a" {
