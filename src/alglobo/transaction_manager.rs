@@ -30,7 +30,7 @@ impl TransactionManager {
         udp_sender: Box<dyn UdpSocketSender + Send>,
         curr_transaction: CurrentTransaction,
         services_addrs_str: &HashMap<&str, String>,
-        replicas_addrs_str: &Vec<String>,
+        replicas_addrs_str: &[String],
         timeout: Duration,
     ) -> Self {
         let services_addrs = services_addrs_str

@@ -93,7 +93,7 @@ impl TransactionReceiver {
 
     pub fn update_transaction_state(
         &mut self,
-        message: &Vec<u8>,
+        message: &[u8],
         service_name: String,
         idx_state: usize,
         idx_fee: usize,

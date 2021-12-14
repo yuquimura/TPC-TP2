@@ -48,7 +48,7 @@ fn main() {
             "".to_string(),
         );
         candidate.start_candidate();
-    } else if input.as_ref().clone().unwrap() == "a" {
+    } else if input.as_ref().unwrap() == "a" {
         let socket_send_airline = UdpSocketWrap::new_with_addr(
             Some(Duration::from_millis(100000)),
             AIRLINE_ADDR.to_string(),
@@ -63,7 +63,7 @@ fn main() {
             AIRLINE_ADDR.to_string(),
         );
         airline_service.start_client();
-    } else if input.as_ref().clone().unwrap() == "b" {
+    } else if input.as_ref().unwrap() == "b" {
         let socket_send_bank = UdpSocketWrap::new_with_addr(
             Some(Duration::from_millis(100000)),
             BANK_ADDR.to_string(),
@@ -78,7 +78,7 @@ fn main() {
             BANK_ADDR.to_string(),
         );
         bank_service.start_client();
-    } else if input.as_ref().clone().unwrap() == "h" {
+    } else if input.as_ref().unwrap() == "h" {
         let socket_send_hotel = UdpSocketWrap::new_with_addr(
             Some(Duration::from_millis(100000)),
             HOTEL_ADDR.to_string(),

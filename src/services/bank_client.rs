@@ -38,11 +38,11 @@ impl Bank {
 impl CommonClient for Bank {
     fn answer_message(&mut self, vector: Vec<u8>, addr_to_answer: String) {
         let code = vector[0];
+        let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
+            .try_into()
+            .expect("[Client] Los ids deberian ocupar 8 bytes");
+        let transaction_id = u64::from_be_bytes(id_bytes);
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare) {
-            let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
-                .try_into()
-                .expect("[Client] Los ids deberian ocupar 8 bytes");
-            let transaction_id = u64::from_be_bytes(id_bytes);
             if let Some(_response) = self.old_responses.get(&transaction_id) {
                 if let Some(_value) = self.old_responses.get(&transaction_id) {
                     let mut response =
@@ -70,12 +70,7 @@ impl CommonClient for Bank {
             TransactionInfo::add_padding(&mut response);
             let _ = self.socket_sender.send_to(&response, &addr_to_answer);
             self.old_responses.insert(transaction_id, true);
-            return;
         } else if code == TransactionRequest::map_transaction_code(TransactionCode::Abort) {
-            let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
-                .try_into()
-                .expect("[Client] Los ids deberian ocupar 8 bytes");
-            let transaction_id = u64::from_be_bytes(id_bytes);
             let mut response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]

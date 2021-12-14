@@ -18,7 +18,7 @@ impl Transaction {
     pub fn new(id: u64, services_info: HashMap<String, f64>) -> Self {
         let services = services_info
             .iter()
-            .map(|(name, fee)| (name.clone(), (TransactionState::Waiting, fee.clone())))
+            .map(|(name, fee)| (name.clone(), (TransactionState::Waiting, *fee)))
             .collect();
 
         Transaction { id, services }
@@ -167,9 +167,9 @@ impl Transactionable for Transaction {
             .expect("[Transaction] Nombre de servicio deberia existir");
         let mut log = TransactionLog::build(
             self.id,
-            airline_info.clone(),
-            hotel_info.clone(),
-            bank_info.clone(),
+            *airline_info,
+            *hotel_info,
+            *bank_info,
         );
         TransactionInfo::add_padding(&mut log);
         log

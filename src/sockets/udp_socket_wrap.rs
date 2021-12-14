@@ -26,7 +26,7 @@ impl UdpSocketWrap {
         addr: String,
     ) -> Result<UdpSocketWrap, String> {
         let socket_result = UdpSocket::bind(addr);
-        return if let Ok(socket_result) = socket_result {
+        if let Ok(socket_result) = socket_result {
             let socket = socket_result;
             socket
                 .set_read_timeout(opt_timeout)
@@ -35,7 +35,7 @@ impl UdpSocketWrap {
             Ok(udp_socket_wrap)
         } else {
             Err("Todo mal".to_string())
-        };
+        }
     }
     /// # Errors
     ///
