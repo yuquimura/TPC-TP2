@@ -42,6 +42,7 @@ impl CommonClient for Hotel {
         }*/
         let code = vector[0];
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare) {
+            println!("Soy buena aerolinea y respondo el Prepare");
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
@@ -54,7 +55,7 @@ impl CommonClient for Hotel {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let mut response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
                 .try_into()
@@ -67,7 +68,7 @@ impl CommonClient for Hotel {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let mut response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
                 .try_into()
@@ -80,7 +81,7 @@ impl CommonClient for Hotel {
 
     fn start_client(&mut self){
         loop {
-            self.process_one_transaction();
+            let _ =self.process_one_transaction();
         }
 
     }

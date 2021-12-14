@@ -77,17 +77,22 @@ impl TransactionReceiver {
 
         match transaction_code {
             TransactionCode::Accept => {
+                println!("LLEGA UN ACCEPT");
                 transaction.accept(service_name.to_string(), None);
+                println!("Hice algo luego del acept");
             }
             TransactionCode::Abort => {
+                println!("LLEGA UN ABORT");
                 transaction.abort(service_name.to_string(), None);
             }
             TransactionCode::Commit => {
+                println!("LLEGA UN COMMIT");
                 transaction.commit(service_name.to_string(), None);
             }
             _ => println!("Codigo de transaccion no esperado: {}", transaction_code),
         }
-
+        self.curr_transaction.1.notify_all();
+        println!("Termine, y mando ok");
         Ok(())
     }
 
@@ -191,7 +196,7 @@ impl TransactionReceiver {
             IDX_BANK_FEE,
         )
         .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
-
+        self.curr_transaction.1.notify_all();
         Ok(())
     }
 

@@ -5,7 +5,6 @@ use crate::transaction_messages::transaction_code::TransactionCode;
 use crate::transaction_messages::transaction_info::TransactionInfo;
 use crate::transaction_messages::transaction_request::TransactionRequest;
 use crate::transaction_messages::transaction_response::TransactionResponse;
-use rand::Rng;
 use std::convert::TryInto;
 use std::mem::size_of;
 
@@ -42,7 +41,7 @@ impl CommonClient for Airline {
         }*/
         let code = vector[0];
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare) {
-            println!("Respondo un prepare de {}",addr_to_answer);
+            println!("Soy buena aerolinea y respondo el Prepare");
             let id_bytes: [u8; size_of::<u64>()] = vector[1..size_of::<u64>() + 1]
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
@@ -56,7 +55,7 @@ impl CommonClient for Airline {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let mut response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
                 .try_into()
@@ -70,7 +69,7 @@ impl CommonClient for Airline {
                 .try_into()
                 .expect("[Client] Los ids deberian ocupar 8 bytes");
             let transaction_id = u64::from_be_bytes(id_bytes);
-            let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+            let mut response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
                 .try_into()
@@ -84,7 +83,7 @@ impl CommonClient for Airline {
     fn start_client(&mut self){
         loop {
             println!("voy a procesar una transaccion");
-           self.process_one_transaction();
+            let _ =self.process_one_transaction();
         }
 
     }
@@ -95,7 +94,6 @@ impl CommonClient for Airline {
         let res_vec = res.unwrap();
         let res_vector = res_vec.0;
         let addr_to_answer = res_vec.1;
-        print!("El puerto que me llega es{}",addr_to_answer);
         self.answer_message(res_vector,addr_to_answer);
         Ok(0)
     }

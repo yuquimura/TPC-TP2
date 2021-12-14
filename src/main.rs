@@ -1,5 +1,4 @@
-use std::thread;
-use std::thread::spawn;
+use std::time::Duration;
 use tp::sockets::udp_socket_wrap::UdpSocketWrap;
 use tp::candidates::constants::{VEC_PORT_INFO, EMPTY, HOTEL_ADDR, BANK_ADDR, AIRLINE_ADDR, DEFAULT_IP};
 use tp::candidates::candidate::Candidate;
@@ -37,25 +36,24 @@ fn main() {
         }
 
         let mut candidate = Candidate::new(Box::new(socket_data_recv), Box::new(socket_data_send), port_candidate.to_string(), vec_addr, EMPTY.to_string(), "".to_string());
-        println!("El nodo que elegi para el candidato {}",port_candidate);
         candidate.start_candidate();
     }
     else if  input.as_ref().clone().unwrap() == "a" {
 
-        let socket_send_airline = UdpSocketWrap::new_with_addr(None, AIRLINE_ADDR.to_string()).expect("No pude crear el socket del servicio de la aerolinea");
+        let socket_send_airline = UdpSocketWrap::new_with_addr(Some(Duration::from_millis(100000)), AIRLINE_ADDR.to_string()).expect("No pude crear el socket del servicio de la aerolinea");
         let socket_recv_airline = socket_send_airline.try_clone().expect("No pude copiar el socket del servicio de la aerolinea");
         let mut airline_service = Airline::new(Box::new(socket_send_airline), Box::new(socket_recv_airline), AIRLINE_ADDR.to_string());
         airline_service.start_client();
     }
     else if  input.as_ref().clone().unwrap() == "b" {
-        let socket_send_bank = UdpSocketWrap::new_with_addr(None, BANK_ADDR.to_string()).expect("No pude crear el socket del servicio de la aerolinea");
+        let socket_send_bank = UdpSocketWrap::new_with_addr(Some(Duration::from_millis(100000)), BANK_ADDR.to_string()).expect("No pude crear el socket del servicio de la aerolinea");
         let socket_recv_bank = socket_send_bank.try_clone().expect("No pude copiar el socket del servicio de la aerolinea");
         let mut bank_service = Bank::new(Box::new(socket_send_bank), Box::new(socket_recv_bank), BANK_ADDR.to_string());
         bank_service.start_client();
 
     }
     else if input.as_ref().clone().unwrap() == "h"  {
-        let socket_send_hotel = UdpSocketWrap::new_with_addr(None, HOTEL_ADDR.to_string()).expect("No pude crear el socket del servicio del hotel");
+        let socket_send_hotel = UdpSocketWrap::new_with_addr(Some(Duration::from_millis(100000)), HOTEL_ADDR.to_string()).expect("No pude crear el socket del servicio del hotel");
         let socket_recv_hotel = socket_send_hotel.try_clone().expect("No pude copiar el socket del servicio del hotel");
         let mut hotel_service = Hotel::new(Box::new(socket_recv_hotel), Box::new(socket_send_hotel), HOTEL_ADDR.to_string());
         hotel_service.start_client();

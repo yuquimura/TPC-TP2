@@ -37,7 +37,6 @@ impl TransactionManager {
             .iter()
             .map(|(addr, name)| (name.clone(), (*addr).to_string()))
             .collect();
-
         let replicas_addrs = replicas_addrs_str
             .iter()
             .map(|addr| addr.to_string())

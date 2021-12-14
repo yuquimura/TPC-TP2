@@ -173,7 +173,7 @@ impl Candidate {
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
         for port in 49152..49352 {
-            let socket_info_data_new = UdpSocketWrap::new_with_addr(None, DEFAULT_IP.to_string()+port.to_string().as_str());
+            let socket_info_data_new = UdpSocketWrap::new_with_addr(Some(Duration::from_millis(1000)), DEFAULT_IP.to_string()+port.to_string().as_str());
             if let Ok(socket_new_aux) = socket_info_data_new {
                 socket_data_recv = socket_new_aux;
                 if let Ok(socket_aux) = socket_data_recv.try_clone() {
@@ -183,15 +183,24 @@ impl Candidate {
             }
         }
         let true_first_trans_cond = first_trans_cond.clone();
+
         thread::spawn(move || {
+            let services_addrs_str_recv = &HashMap::from([
+                (AIRLINE_ADDR, ServiceName::Airline.string_name()),
+                (HOTEL_ADDR, ServiceName::Hotel.string_name()),
+                (BANK_ADDR, ServiceName::Bank.string_name()),
+            ]);
             let mut transaction_receiver = TransactionReceiver::new(
                 0,
                 Box::new(socket_data_recv),
-                &Default::default(),
+                &services_addrs_str_recv,
                 true_first_trans_cond,
             );
 
-            let _ =transaction_receiver.recv();
+            loop{
+                let _ =transaction_receiver.recv();
+            }
+
         });
         loop {
             self.send_to();
@@ -223,6 +232,9 @@ impl Candidate {
             (HOTEL_ADDR, ServiceName::Hotel.string_name()),
             (BANK_ADDR, ServiceName::Bank.string_name()),
         ]);
+        for (key, value) in services_addrs_str {
+            println!("{}: {}", key, value);
+        }
         let mut vec_addr: Vec<String> = vec![DEFAULT_IP.to_string()+"49353"];
         for port in VEC_PORT_DATA.clone() {
             vec_addr.push(DEFAULT_IP.to_string()+port.to_string().as_str());
@@ -234,7 +246,7 @@ impl Candidate {
             first_trans_cond.clone(),
             services_addrs_str,
             vec,
-            Duration::from_millis(1000),
+            Duration::from_millis(10000),
         );
         let id = transaction_manager.process(None);
         leader.start_leader(transaction_manager, id);
