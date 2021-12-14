@@ -11,15 +11,15 @@ use std::mem::size_of;
 
 #[allow(dead_code)]
 pub struct Airline {
-    socket_receiver: Box<dyn UdpSocketReceiver>,
-    socket_sender: Box<dyn UdpSocketSender>,
+    socket_receiver: Box<dyn UdpSocketReceiver + Send>,
+    socket_sender: Box<dyn UdpSocketSender + Send>,
     pub(crate) fee_sum: f64,
     addr: String,
 }
 impl Airline {
     pub fn new(
-        socket_receiver: Box<dyn UdpSocketReceiver>,
-        socket_sender: Box<dyn UdpSocketSender>,
+        socket_receiver: Box<dyn UdpSocketReceiver + Send>,
+        socket_sender: Box<dyn UdpSocketSender + Send>,
         addr: String,
     ) -> Airline {
         Airline {
@@ -81,17 +81,12 @@ impl CommonClient for Airline {
         }
     }
 
-    fn start_client(&mut self) -> i64 {
+    fn start_client(&mut self){
         loop {
-            let res = self.socket_receiver.recv(TransactionRequest::size());
-            let res_vec = res.unwrap().0;
-            if res_vec[0].to_string() == "q" {
-                break;
-            } else {
-                self.answer_message(res_vec);
-            }
+            println!("voy a procesar una transaccion");
+           self.process_one_transaction();
         }
-        0
+
     }
 
     fn process_one_transaction(&mut self) -> Result<i64, String> {
