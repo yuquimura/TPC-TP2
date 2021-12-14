@@ -1,5 +1,6 @@
 use crate::alglobo::transaction_manager::TransactionManager;
 use crate::alglobo::transactionable::Transactionable;
+use crate::candidates::constants::SLEEP;
 use crate::candidates::election_code::ElectionCode;
 use crate::candidates::election_message::ElectionMessage;
 use crate::file_reader::file_iterator::FileIterator;
@@ -11,7 +12,6 @@ use std::sync::RwLock;
 use std::thread;
 use std::thread::sleep;
 use std::time::Duration;
-use crate::candidates::constants::SLEEP;
 
 #[allow(dead_code)]
 pub struct Leader {
@@ -90,10 +90,10 @@ impl Leader {
         let _ = join_handle.join();
     }
 }
-
+/*
 #[cfg(test)]
 mod tests {
-    /*use super::*;
+    use super::*;
     use crate::candidates::candidate::Candidate;
     use crate::{
         candidates::election_code::ElectionCode,
@@ -101,7 +101,7 @@ mod tests {
         sockets::udp_socket_sender::MockUdpSocketSender,
     };
 
-    /*#[test]
+    #[test]
     fn it_should_receive_alive_message(){
         let address = "127.0.0.1:49156";
         let mut mock_receiver = MockUdpSocketReceiver::new();
@@ -129,5 +129,6 @@ mod tests {
                                            vec!["".to_string()],
                                            "49156".to_string(), address.to_string());
         candidate.send_to();
-    }*/
+    }
 }
+ */

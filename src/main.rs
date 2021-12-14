@@ -13,10 +13,10 @@ use tp::sockets::udp_socket_wrap::UdpSocketWrap;
 fn main() {
     let input = get_input();
     if input.is_err() {
-        print!("Invalid input");
+        println!("Error. Utilizar cargo run + c: crear candidato. a: servicio aerolinea, b: servicio banco o h: servicio hotel");
         return;
     }
-    if input.clone().unwrap() == "c" {
+    if input.clone().expect("Error. Utilizar cargo run + c: crear candidato. a: servicio aerolinea, b: servicio banco o h: servicio hotel ") == "c" {
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
         let mut port_candidate: i32 = 0;
@@ -48,7 +48,7 @@ fn main() {
             "".to_string(),
         );
         candidate.start_candidate();
-    } else if input.as_ref().unwrap() == "a" {
+    } else if input.as_ref().expect("Input incorrecto") == "a" {
         let socket_send_airline = UdpSocketWrap::new_with_addr(
             Some(Duration::from_millis(100_000)),
             AIRLINE_ADDR.to_string(),
@@ -63,7 +63,7 @@ fn main() {
             AIRLINE_ADDR.to_string(),
         );
         airline_service.start_client();
-    } else if input.as_ref().unwrap() == "b" {
+    } else if input.as_ref().expect("Input incorrecto") == "b" {
         let socket_send_bank = UdpSocketWrap::new_with_addr(
             Some(Duration::from_millis(100_000)),
             BANK_ADDR.to_string(),
@@ -78,7 +78,7 @@ fn main() {
             BANK_ADDR.to_string(),
         );
         bank_service.start_client();
-    } else if input.as_ref().unwrap() == "h" {
+    } else if input.as_ref().expect("Input incorrecto") == "h" {
         let socket_send_hotel = UdpSocketWrap::new_with_addr(
             Some(Duration::from_millis(100_000)),
             HOTEL_ADDR.to_string(),
@@ -103,7 +103,7 @@ mod input_reader {
 
     pub fn get_input() -> Result<String, i64> {
         let args: Vec<String> = env::args().collect();
-        if args.is_empty() {
+        if args.len() < 2 {
             return Err(1);
         }
         let filename = &args[1];
