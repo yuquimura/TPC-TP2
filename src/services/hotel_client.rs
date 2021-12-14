@@ -1,3 +1,4 @@
+use crate::services::constants::PERCENTAGE_ERROR;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 use crate::transaction_messages::transaction_code::TransactionCode;
@@ -8,7 +9,6 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::mem::size_of;
-use crate::services::constants::PERCENTAGE_ERROR;
 
 use super::common_client::CommonClient;
 

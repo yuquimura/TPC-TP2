@@ -165,12 +165,7 @@ impl Transactionable for Transaction {
             .services
             .get(&ServiceName::Bank.string_name())
             .expect("[Transaction] Nombre de servicio deberia existir");
-        let mut log = TransactionLog::build(
-            self.id,
-            *airline_info,
-            *hotel_info,
-            *bank_info,
-        );
+        let mut log = TransactionLog::build(self.id, *airline_info, *hotel_info, *bank_info);
         TransactionInfo::add_padding(&mut log);
         log
     }

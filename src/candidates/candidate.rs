@@ -128,7 +128,7 @@ impl Candidate {
         }
     }
 
-    fn start_election(&mut self, his_address:&str) -> bool {
+    fn start_election(&mut self, his_address: &str) -> bool {
         let mut im_the_leader = true;
         for port in self.possible_ports.iter() {
             if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap() {
