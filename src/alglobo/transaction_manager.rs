@@ -60,7 +60,7 @@ impl TransactionManager {
         if !self.prepare() {
             // Seguir abortando hasta que
             // todos los servicios respondan
-            while !self.abort() {}
+            while !self.abort() {} // Escribir archivo replica.
         } else {
             // Seguir commiteando hasta que
             // todos los servicios respondan
@@ -107,13 +107,17 @@ impl TransactionManager {
             !opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
-                .is_accepted()
+                .is_accepted() && !opt_transaction
+                .as_ref()
+                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
+                .is_commited()
         });
         self.send_transaction_logs();
         res.is_ok()
     }
 
     pub fn abort(&mut self) -> bool {
+        println!("abort");
         let transaction_id;
         let all_services;
         {
@@ -140,6 +144,7 @@ impl TransactionManager {
     }
 
     pub fn commit(&mut self) -> bool {
+
         let transaction_id;
         let all_services;
         {

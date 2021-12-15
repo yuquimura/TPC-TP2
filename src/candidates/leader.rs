@@ -15,54 +15,51 @@ use std::time::Duration;
 
 #[allow(dead_code)]
 pub struct Leader {
-    udp_receiver: Box<dyn UdpSocketReceiver + Send>,
-    udp_sender: Box<dyn UdpSocketSender + Send>,
+    /*udp_receiver: Box<dyn UdpSocketReceiver + Send>,
+    udp_sender: Box<dyn UdpSocketSender + Send>,*/
     possible_ports: Range<i32>,
 }
 
 impl Leader {
     #[must_use]
     pub fn new(
-        udp_receiver: Box<dyn UdpSocketReceiver + Send>,
-        udp_sender: Box<dyn UdpSocketSender + Send>,
+       /* udp_receiver: Box<dyn UdpSocketReceiver + Send>,
+        udp_sender: Box<dyn UdpSocketSender + Send>,*/
         possible_ports: Range<i32>,
     ) -> Self {
         Leader {
-            udp_receiver,
-            udp_sender,
+         /*   udp_receiver,
+            udp_sender,*/
             possible_ports,
         }
     }
 
-    pub fn recv(&mut self) {
-        self.udp_receiver
-            .set_timeout(Some(Duration::from_millis(1000)));
-        if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
+    pub fn recv(&mut self, recv: &mut Box<dyn UdpSocketReceiver>, send: &mut Box<dyn UdpSocketSender>) {
+        recv.set_timeout(Some(Duration::from_millis(10000)));
+        let result = recv.recv(ElectionMessage::size());
+        if let Ok(response) = result.as_ref() {
             match response.0[0] {
                 b'v' => {
                     let message = ElectionMessage::build(ElectionCode::Alive);
                     let his_address = response.1.clone();
-                    let _drop = self.udp_sender.send_to(message.as_slice(), &his_address);
+                    let _drop = send.send_to(message.as_slice(), &his_address);
                 }
                 b'e' => {
                     let his_address = response.1.clone();
                     for port in self.possible_ports.clone() {
                         let message = ElectionMessage::build(ElectionCode::Leader);
                         let his_address_vect: Vec<&str> = his_address.split(':').collect();
-                        let address_to_send = his_address_vect[0].to_string() + &port.to_string();
-                        let _drop = self
-                            .udp_sender
-                            .send_to(message.as_slice(), &address_to_send);
+                        let address_to_send = his_address_vect[0].to_string() +":"+ &port.to_string();
+                        let _drop = send.send_to(message.as_slice(), &address_to_send);
                     }
                 }
                 _ => {
-                    println!("No hay mas casos");
                 }
             }
         }
     }
 
-    pub fn start_leader(&mut self, mut transaction_manager: TransactionManager, start_line: u64) {
+    pub fn start_leader(&mut self, mut transaction_manager: TransactionManager, start_line: u64, recv: &mut Box<dyn UdpSocketReceiver>,send: &mut Box<dyn UdpSocketSender>) {
         let boolean = false;
         let lock = Arc::new(RwLock::new(boolean));
         let lock_clone = lock.clone();
@@ -79,14 +76,14 @@ impl Leader {
             }
             let mut result = lock_clone.write().expect("El lock esta envenenado");
             *result = true;
-        });
+        }); // esperar convar en true.
         loop {
-            self.recv();
+            self.recv(recv,send);
             let result_read = lock.read().expect("El lock esta envenenado");
             if *result_read {
                 break;
             }
-        }
+        };
         let _ = join_handle.join();
     }
 }

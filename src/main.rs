@@ -38,7 +38,6 @@ fn main() {
                 }
             }
         }
-
         let mut candidate = Candidate::new(
             Box::new(socket_data_recv),
             Box::new(socket_data_send),

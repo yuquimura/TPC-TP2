@@ -131,7 +131,8 @@ impl Candidate {
     fn start_election(&mut self, his_address: &str) -> bool {
         let mut im_the_leader = true;
         for port in self.possible_ports.iter() {
-            if port.parse::<i32>().unwrap() > self.my_port.parse::<i32>().unwrap() {
+            if port.parse::<i32>().unwrap() < self.my_port.parse::<i32>().unwrap() {
+
                 let message = ElectionMessage::build(ElectionCode::Election);
                 let his_address_vect: Vec<&str> = his_address.split(':').collect();
                 let address_to_send = his_address_vect[0].to_string() + ":" + port;
@@ -170,7 +171,7 @@ impl Candidate {
         let mut port_transaction = 0;
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
-        for port in 49152..49352 {
+        for port in VEC_PORT_DATA.clone() {
             let socket_info_data_new = UdpSocketWrap::new_with_addr(
                 Some(Duration::from_millis(1000)),
                 DEFAULT_IP.to_string() + port.to_string().as_str(),
@@ -211,9 +212,9 @@ impl Candidate {
             }
         }
 
-        let mut socket_info_recv = UdpSocketWrap::new(None);
+        /*let mut socket_info_recv = UdpSocketWrap::new(None);
         let mut socket_info_send = UdpSocketWrap::new(None);
-        for port in 49152..49352 {
+        for port in VEC_PORT_INFO.clone() {
             let socket_info_recv_new = UdpSocketWrap::new_with_addr(None, port.to_string());
             if let Ok(socket_new_aux) = socket_info_recv_new {
                 socket_info_recv = socket_new_aux;
@@ -222,10 +223,10 @@ impl Candidate {
                     break;
                 }
             }
-        }
+        }*/
         let mut leader = Leader::new(
-            Box::new(socket_info_recv),
-            Box::new(socket_info_send),
+            /*Box::new(None),
+            Box::new(None),*/
             VEC_PORT_INFO.clone(),
         );
         let services_addrs_str = &HashMap::from([
@@ -239,7 +240,7 @@ impl Candidate {
         }
         let vec = &vec_addr;
         let mut transaction_manager = TransactionManager::new(
-            port_transaction,
+            port_transaction as u64,
             Box::new(socket_data_send),
             first_trans_cond.clone(),
             services_addrs_str,
@@ -247,7 +248,7 @@ impl Candidate {
             Duration::from_millis(10000),
         );
         let id = transaction_manager.process(None);
-        leader.start_leader(transaction_manager, id);
+        leader.start_leader(transaction_manager, id, &mut self.udp_receiver, &mut self.udp_sender);
     }
 }
 
