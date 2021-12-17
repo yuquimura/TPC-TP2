@@ -1,3 +1,4 @@
+use std::fs::{OpenOptions, File};
 use std::{collections::HashMap, time::Duration};
 
 use crate::candidates::constants::DEFAULT_IP;
@@ -21,6 +22,7 @@ pub struct TransactionManager {
     services_addrs: HashMap<String, String>,
     replicas_addrs: Vec<String>,
     timeout: Duration,
+    abort_file_opt: Option<File>
 }
 
 #[allow(dead_code)]
@@ -32,6 +34,7 @@ impl TransactionManager {
         services_addrs_str: &HashMap<&str, String>,
         replicas_addrs_str: &[String],
         timeout: Duration,
+        path_opt: Option<String>
     ) -> Self {
         let services_addrs = services_addrs_str
             .clone()
@@ -42,7 +45,18 @@ impl TransactionManager {
             .iter()
             .map(|addr| addr.to_string())
             .collect();
-
+        let mut abort_file_opt = None;
+        if let Some(path) = path_opt {
+            let mut options = OpenOptions::new();
+            abort_file_opt = Some(
+                options
+                    .create(true)
+                    .append(true)
+                    .open(path)
+                    .expect("[Transaction Manager] Error al abrir archivo de fallas")
+            );
+        }
+        
         TransactionManager {
             id,
             udp_sender,
@@ -50,6 +64,7 @@ impl TransactionManager {
             services_addrs,
             replicas_addrs,
             timeout,
+            abort_file_opt
         }
     }
 
@@ -319,6 +334,7 @@ mod tests {
             &services_addrs_str,
             &vec![],
             Duration::from_secs(0),
+            None
         );
 
         manager.update_current(transaction);
@@ -406,6 +422,7 @@ mod tests {
             &services_addrs_str,
             &vec![],
             Duration::from_secs(0),
+            None
         );
 
         manager.update_current(transaction);
@@ -518,6 +535,7 @@ mod tests {
             &services_addrs_str,
             &vec![],
             Duration::from_secs(2),
+            None
         );
 
         manager.update_current(transaction);
@@ -636,6 +654,7 @@ mod tests {
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(2),
+            None
         );
 
         manager.update_current(transaction);
@@ -756,6 +775,7 @@ mod tests {
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(1),
+            None
         );
 
         manager.update_current(transaction);
@@ -879,6 +899,7 @@ mod tests {
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(1),
+            None
         );
 
         manager.update_current(transaction);
