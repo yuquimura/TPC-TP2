@@ -35,5 +35,7 @@ pub trait Transactionable {
 
     fn log(&self) -> Vec<u8>;
 
+    fn retry(&self) -> Vec<u8>;
+
     fn representation(&self) -> String;
 }

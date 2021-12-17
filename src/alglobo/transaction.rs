@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     services::service_name::ServiceName,
-    transaction_messages::{transaction_info::TransactionInfo, transaction_log::TransactionLog},
+    transaction_messages::{transaction_info::TransactionInfo, transaction_log::TransactionLog, transaction_retry::TransactionRetry},
 };
 
 use super::{transaction_state::TransactionState, transactionable::Transactionable};
@@ -168,6 +168,24 @@ impl Transactionable for Transaction {
         let mut log = TransactionLog::build(self.id, *airline_info, *hotel_info, *bank_info);
         TransactionInfo::add_padding(&mut log);
         log
+    }
+
+    fn retry(&self) -> Vec<u8> {
+        let airline_info = self
+            .services
+            .get(&ServiceName::Airline.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let hotel_info = self
+            .services
+            .get(&ServiceName::Hotel.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let bank_info = self
+            .services
+            .get(&ServiceName::Bank.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let mut msg = TransactionRetry::build(self.id, airline_info.1, hotel_info.1, bank_info.1);
+        TransactionInfo::add_padding(&mut msg);
+        msg
     }
 
     fn representation(&self) -> String {

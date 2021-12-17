@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "retry"
-path = "src/bin/retry/main.rs"
+path = "src/main_retry.rs"
 
 [dependencies]
 rand = "0.8.4"
