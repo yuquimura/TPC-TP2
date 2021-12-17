@@ -3,19 +3,19 @@
 # Comandos
 Levantar una instancia de Aerolinea
 ```
-cargo run a
+cargo run -- a
 ```
 Levantar una instancia de Banco
 ```
-cargo run b
+cargo run -- b
 ```
 Levantar una instancia de Hotel
 ```
-cargo run h
+cargo run -- h
 ```
 Levantar un nodo candidato nuevo
 ```
-cargo run c
+cargo run -- c
 ```
 
 
