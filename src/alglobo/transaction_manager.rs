@@ -257,9 +257,18 @@ impl TransactionManager {
 
     fn persist_aborted(&mut self) {
         if let Some(abort_file) = &mut self.abort_file_opt {
-            let transaction_str = "Esto es una transaccion\n".to_string();
+            let opt_transaction = self
+                .curr_transaction
+                .0
+                .lock()
+                .expect("[Transaction Manager] Lock de transaccion envenenado");
+            let transaction = opt_transaction
+                .as_ref()
+                .expect("[Transaction Manager] La transaccion actual deberia exitir");
+            let mut representation = transaction.representation();
+            representation.push('\n');
             abort_file
-                .write_all(transaction_str.as_bytes())
+                .write_all(representation.as_bytes())
                 .expect("[Transaction Manager] Persistir transaccion abortada no deberia fallar");
             println!("[Transaction Manager] Transaccion abortada persistida");
         }

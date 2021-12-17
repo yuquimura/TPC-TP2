@@ -34,4 +34,6 @@ pub trait Transactionable {
     fn is_commited(&self) -> bool;
 
     fn log(&self) -> Vec<u8>;
+
+    fn representation(&self) -> String;
 }

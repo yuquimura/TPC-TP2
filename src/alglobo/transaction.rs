@@ -169,6 +169,28 @@ impl Transactionable for Transaction {
         TransactionInfo::add_padding(&mut log);
         log
     }
+
+    fn representation(&self) -> String {
+        let airline_info = self
+            .services
+            .get(&ServiceName::Airline.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let hotel_info = self
+            .services
+            .get(&ServiceName::Hotel.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        let bank_info = self
+            .services
+            .get(&ServiceName::Bank.string_name())
+            .expect("[Transaction] Nombre de servicio deberia existir");
+        format!(
+            "{},{},{},{}",
+            self.id,
+            airline_info.1,
+            hotel_info.1,
+            bank_info.1,
+        )
+    }
 }
 
 #[cfg(test)]
