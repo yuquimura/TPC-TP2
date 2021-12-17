@@ -1,5 +1,6 @@
 use std::fs::{OpenOptions, File};
 use std::io::Write;
+use std::sync::MutexGuard;
 use std::{collections::HashMap, time::Duration};
 
 use crate::candidates::constants::DEFAULT_IP;
@@ -15,7 +16,6 @@ use super::{
     transactionable::Transactionable, types::CurrentTransaction,
 };
 
-#[allow(dead_code)]
 pub struct TransactionManager {
     pub id: u64,
     udp_sender: Box<dyn UdpSocketSender + Send>,
@@ -26,7 +26,6 @@ pub struct TransactionManager {
     abort_file_opt: Option<File>
 }
 
-#[allow(dead_code)]
 impl TransactionManager {
     pub fn new(
         id: u64,
@@ -74,8 +73,6 @@ impl TransactionManager {
             self.update_current(transaction);
         }
         if !self.prepare() {
-            // Seguir abortando hasta que
-            // todos los servicios respondan
             self.abort();
             self.persist_aborted();
         } else {
@@ -84,11 +81,7 @@ impl TransactionManager {
             while !self.commit() {}
         }
 
-        let opt_transaction = self
-            .curr_transaction
-            .0
-            .lock()
-            .expect("[Transaction Manager] Lock de transaccion envenenado");
+        let opt_transaction = self.get_current();
         let transaction = opt_transaction
             .as_ref()
             .expect("[Transaction Manager] La transaccion actual deberia exitir");
@@ -108,11 +101,7 @@ impl TransactionManager {
         let transaction_id;
         let waiting_services;
         {
-            let opt_transaction = self
-                .curr_transaction
-                .0
-                .lock()
-                .expect("[Transaction Manager] Lock de transaccion envenenado");
+            let opt_transaction = self.get_current();
             let transaction = opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transaccion actual deberia exitir");
@@ -120,17 +109,18 @@ impl TransactionManager {
             waiting_services = transaction.waiting_services();
         }
         self.send_messages(TransactionCode::Prepare, transaction_id, waiting_services);
-        let res = self.wait_update(|opt_transaction| {
-            !opt_transaction
+        let _ = self.wait_update(|opt_transaction| {
+            opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
-                .is_accepted() && !opt_transaction
-                .as_ref()
-                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
-                .is_commited()
+                .is_any_waiting()
         });
         self.send_transaction_logs();
-        res.is_ok()
+        let opt_transaction = self.get_current();
+        let transaction = opt_transaction
+            .as_ref()
+            .expect("[Transaction Manager] La transaccion actual deberia exitir");
+        transaction.is_accepted() || transaction.is_commited()
     }
 
     pub fn abort(&mut self) -> bool {
@@ -138,11 +128,7 @@ impl TransactionManager {
         let transaction_id;
         let all_services;
         {
-            let opt_transaction = self
-                .curr_transaction
-                .0
-                .lock()
-                .expect("[Transaction Manager] Lock de transaccion envenenado");
+            let opt_transaction = self.get_current();
             let transaction = opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transaccion actual deberia exitir");
@@ -150,14 +136,18 @@ impl TransactionManager {
             all_services = transaction.not_aborted_services();
         }
         self.send_messages(TransactionCode::Abort, transaction_id, all_services);
-        let res = self.wait_update(|opt_transaction| {
+        let _ = self.wait_update(|opt_transaction| {
             !opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
                 .is_aborted()
         });
         self.send_transaction_logs();
-        res.is_ok()
+        let opt_transaction = self.get_current();
+        let transaction = opt_transaction
+            .as_ref()
+            .expect("[Transaction Manager] La transaccion actual deberia exitir");
+        transaction.is_aborted()
     }
 
     pub fn commit(&mut self) -> bool {
@@ -165,11 +155,7 @@ impl TransactionManager {
         let transaction_id;
         let all_services;
         {
-            let opt_transaction = self
-                .curr_transaction
-                .0
-                .lock()
-                .expect("[Transaction Manager] Lock de transaccion envenenado");
+            let opt_transaction = self.get_current();
             let transaction = opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transaccion actual deberia exitir");
@@ -177,14 +163,18 @@ impl TransactionManager {
             all_services = transaction.accepted_services();
         }
         self.send_messages(TransactionCode::Commit, transaction_id, all_services);
-        let res = self.wait_update(|opt_transaction| {
+        let _ = self.wait_update(|opt_transaction| {
             !opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
                 .is_commited()
         });
         self.send_transaction_logs();
-        res.is_ok()
+        let opt_transaction = self.get_current();
+        let transaction = opt_transaction
+            .as_ref()
+            .expect("[Transaction Manager] La transaccion actual deberia exitir");
+        transaction.is_commited()
     }
 
     fn wait_update(
@@ -230,16 +220,17 @@ impl TransactionManager {
     }
 
     fn send_transaction_logs(&mut self) {
-        let opt_transaction = self
-            .curr_transaction
-            .0
-            .lock()
-            .expect("[Transaction Manager] Lock de transaccion envenenado");
-        let transaction = opt_transaction
-            .as_ref()
-            .expect("[Transaction Manager] La transaccion actual deberia exitir");
-        let transaction_log = transaction.log();
-        let transaction_id = transaction.get_id();
+        let transaction_log;
+        let transaction_id;
+        {
+
+            let opt_transaction = self.get_current();
+            let transaction = opt_transaction
+                .as_ref()
+                .expect("[Transaction Manager] La transaccion actual deberia exitir");
+            transaction_log = transaction.log();
+            transaction_id = transaction.get_id();
+        }
         let my_addr = DEFAULT_IP.to_string() + self.id.to_string().as_str();
         for addr in self.replicas_addrs.clone() {
             if addr == my_addr {
@@ -272,6 +263,14 @@ impl TransactionManager {
                 .expect("[Transaction Manager] Persistir transaccion abortada no deberia fallar");
             println!("[Transaction Manager] Transaccion abortada persistida");
         }
+    }
+
+    fn get_current(&self) -> MutexGuard<'_, Option<Box<(dyn Transactionable + Send + 'static)>>> {
+        self
+            .curr_transaction
+            .0
+            .lock()
+            .expect("[Transaction Manager] Lock de transaccion envenenado")
     }
 }
 
