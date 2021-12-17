@@ -2,7 +2,9 @@ use crate::alglobo::transaction_manager::TransactionManager;
 use crate::alglobo::transaction_receiver::TransactionReceiver;
 use crate::alglobo::types::CurrentTransaction;
 use crate::candidates::constants::{
-    AIRLINE_ADDR, BANK_ADDR, DEFAULT_IP, EMPTY, HOTEL_ADDR, VEC_PORT_DATA, VEC_PORT_INFO,
+    AIRLINE_ADDR, BANK_ADDR, DEFAULT_IP, EMPTY, 
+    HOTEL_ADDR, VEC_PORT_DATA, VEC_PORT_INFO,
+    ABORT_FILE
 };
 use crate::candidates::election_code::ElectionCode;
 use crate::candidates::election_message::ElectionMessage;
@@ -246,7 +248,7 @@ impl Candidate {
             services_addrs_str,
             vec,
             Duration::from_millis(10000),
-            None
+            Some(ABORT_FILE.to_string())
         );
         let id = transaction_manager.process(None);
         leader.start_leader(transaction_manager, id, &mut self.udp_receiver, &mut self.udp_sender);

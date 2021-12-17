@@ -10,3 +10,4 @@ pub static VEC_PORT_INFO: Range<i32> = 49354..49356;
 pub static AIRLINE_ADDR: &str = "127.0.0.1:59353";
 pub static HOTEL_ADDR: &str = "127.0.0.1:59354";
 pub static BANK_ADDR: &str = "127.0.0.1:59355";
+pub static ABORT_FILE: &str = "data/abortadas.txt";

@@ -1,4 +1,5 @@
 use std::fs::{OpenOptions, File};
+use std::io::Write;
 use std::{collections::HashMap, time::Duration};
 
 use crate::candidates::constants::DEFAULT_IP;
@@ -75,7 +76,8 @@ impl TransactionManager {
         if !self.prepare() {
             // Seguir abortando hasta que
             // todos los servicios respondan
-            while !self.abort() {} // Escribir archivo replica.
+            self.abort();
+            self.persist_aborted();
         } else {
             // Seguir commiteando hasta que
             // todos los servicios respondan
@@ -250,6 +252,16 @@ impl TransactionManager {
             self.udp_sender
                 .send_to(&transaction_log, &addr)
                 .expect("[Transaction Manager] Enviar mensaje de log no deberia fallar");
+        }
+    }
+
+    fn persist_aborted(&mut self) {
+        if let Some(abort_file) = &mut self.abort_file_opt {
+            let transaction_str = "Esto es una transaccion\n".to_string();
+            abort_file
+                .write_all(transaction_str.as_bytes())
+                .expect("[Transaction Manager] Persistir transaccion abortada no deberia fallar");
+            println!("[Transaction Manager] Transaccion abortada persistida");
         }
     }
 }
