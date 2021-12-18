@@ -20,6 +20,7 @@ impl TransactionRetrier {
     pub fn process(&mut self, transaction: Box<dyn Transactionable>) {
         let msg = transaction.retry();
         for addr in &self.replicas_addrs {
+            println!("[Transaction Retrier] Enviando reintento de transaccion a {}", addr);
             self.udp_sender.send_to(&msg, addr)
                 .expect("[Transaction Retrier] Enviar reintento no deberia fallar");
         }

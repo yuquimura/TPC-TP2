@@ -14,6 +14,7 @@ use crate::transaction_messages::transaction_retry::TransactionRetry;
 use crate::transaction_messages::types::{LOG_BYTE, RESPONSE_BYTE, RETRY_BYTE};
 
 use super::transaction_state::TransactionState;
+use super::transactionable::Transactionable;
 use super::types::CurrentTransaction;
 
 #[allow(dead_code)]
@@ -201,18 +202,32 @@ impl TransactionReceiver {
     }
 
     fn process_retry(&mut self, message: &[u8]) -> Result<(), TransactionError> {
+        let new_transaction = TransactionRetry::new_transaction(message);
+        let repr = new_transaction.representation();
+
         let mut ended = self.ended.0.lock()
             .expect("[Transaction Receiver] Lock de finilizacion envenenado");
         if !*ended { 
+            println!("[Transaction Receiver] Reintento {} DENEGADO: otra transaccion en ejecucion", repr);
             return Ok(()); 
         }
         
-        let new_transaction = TransactionRetry::new_transaction(message);
         let mut opt_transaction = self
             .curr_transaction
             .0
             .lock()
             .expect("[Transaction Manager] Lock de transaccion envenenado");
+        
+        if let Some(transaction) = opt_transaction.as_ref() {
+            let curr_id = transaction.get_id();
+            let new_id = new_transaction.get_id();
+            if curr_id >= new_id {
+                println!("[Transaction Receiver] Reintento {} DENEGADO: ID bajo", repr);
+                return Ok(()); 
+            }
+        }
+
+        println!("[Transaction Receiver] Reintento {} CONCEDIDO", repr);
         *opt_transaction = Some(Box::new(new_transaction));
 
         *ended = false;
