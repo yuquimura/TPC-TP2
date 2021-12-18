@@ -1,21 +1,15 @@
 use crate::alglobo::transaction_manager::TransactionManager;
-// use crate::alglobo::transactionable::Transactionable;
-// use crate::candidates::constants::SLEEP;
 use crate::candidates::election_code::ElectionCode;
 use crate::candidates::election_message::ElectionMessage;
-// use crate::file_reader::file_iterator::FileIterator;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::sockets::udp_socket_sender::UdpSocketSender;
 use std::ops::Range;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
-// use std::thread::sleep;
 use std::time::Duration;
 
 use super::constants::TRANSACTION_FILE;
-
-// use super::constants::END_TIMEOUT;
 
 #[allow(dead_code)]
 pub struct Leader {
@@ -63,30 +57,12 @@ impl Leader {
         }
     }
 
-    pub fn start_leader(&mut self, mut transaction_manager: TransactionManager, _start_line: u64, recv: &mut Box<dyn UdpSocketReceiver>,send: &mut Box<dyn UdpSocketSender>) {
+    pub fn start_leader(&mut self, mut transaction_manager: TransactionManager, recv: &mut Box<dyn UdpSocketReceiver>,send: &mut Box<dyn UdpSocketSender>) {
         let boolean = false;
         let finish_lock = Arc::new(RwLock::new(boolean));
         let finish_lock_clone = finish_lock.clone();
         let join_handle = thread::spawn(move || {
             transaction_manager.run(TRANSACTION_FILE, finish_lock_clone);
-            // if let Ok(mut reader) = FileIterator::new("data/data.csv") {
-            //     while !reader.ended() {
-            //         if let Some(transaction) = reader.next() {
-            //             if transaction.get_id() > start_line {
-            //                 sleep(Duration::from_secs(SLEEP));
-            //                 transaction_manager.process(Some(transaction));
-            //             }
-            //         }
-            //     }
-            // }
-
-            // while let Ok(_) = transaction_manager.wait_end_while(END_TIMEOUT.clone()) {
-            //     transaction_manager.process(None);
-            // }
-
-            // // Esperar Reintentos por un tiempo X antes de terminar la ejecucion.
-            // let mut result = lock_clone.write().expect("El lock esta envenenado");
-            // *result = true;
         }); 
         loop {
             self.recv(recv,send);

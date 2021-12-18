@@ -239,8 +239,7 @@ impl Candidate {
             Duration::from_millis(10000),
             Some(ABORT_FILE.to_string())
         );
-        //let id = transaction_manager.process(None);
-        leader.start_leader(transaction_manager, 0 /*id*/, &mut self.udp_receiver, &mut self.udp_sender);
+        leader.start_leader(transaction_manager, &mut self.udp_receiver, &mut self.udp_sender);
     }
 }
 
