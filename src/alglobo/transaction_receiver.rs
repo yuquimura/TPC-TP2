@@ -474,4 +474,56 @@ mod tests {
         assert_eq!(services_info, HashMap::from(services_info_vec));
         assert!(!*ended.0.lock().unwrap());
     }
+
+    #[test]
+    fn it_should_ignore_transaction_retry_if_not_ended() {
+        let services_addrs = HashMap::from([
+            ("127.0.0.1:49156", ServiceName::Airline.string_name()),
+            ("127.0.0.1:49157", ServiceName::Hotel.string_name()),
+            ("127.0.0.1:49158", ServiceName::Bank.string_name()),
+        ]);
+
+        let transaction_id = 0;
+        let services_info_vec = [
+            (ServiceName::Airline.string_name(), 100.0),
+            (ServiceName::Hotel.string_name(), 200.0),
+            (ServiceName::Bank.string_name(), 300.0)
+        ];
+
+        let mut message = TransactionRetry::build(
+            transaction_id, 
+            services_info_vec[0].1, 
+            services_info_vec[1].1, 
+            services_info_vec[2].1
+        );
+        TransactionInfo::add_padding(&mut message);
+
+        let mut mock_socket = MockUdpSocketReceiver::new();
+
+        let msg_len = message.len();
+        mock_socket
+            .expect_recv()
+            .withf(move |n_bytes| n_bytes == &msg_len)
+            .times(1)
+            .returning(move |_| Ok((message.clone(), "".to_string())));
+
+        let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
+        let curr_transaction_clone = curr_transaction.clone();
+        
+        let ended = Arc::new((Mutex::new(false), Condvar::new()));
+        let ended_clone =  ended.clone();
+        
+        let mut receiver = TransactionReceiver::new(
+            0,
+            Box::new(mock_socket),
+            &services_addrs,
+            curr_transaction_clone,
+            ended_clone
+        );
+
+        assert!(receiver.recv().is_ok());
+        let opt_transaction = curr_transaction.0.lock().unwrap();
+        assert!(opt_transaction.is_none());
+        assert!(!*ended.0.lock().unwrap());
+    }
 }
