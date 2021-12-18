@@ -58,8 +58,8 @@ impl Iterator for FileIterator {
         }
         let mut services_info: HashMap<String, f64> = HashMap::new();
         services_info.insert("Airline".to_string(), params[1].parse::<f64>().unwrap());
-        services_info.insert("Bank".to_string(), params[2].parse::<f64>().unwrap());
-        services_info.insert("Hotel".to_string(), params[3].parse::<f64>().unwrap());
+        services_info.insert("Hotel".to_string(), params[2].parse::<f64>().unwrap());
+        services_info.insert("Bank".to_string(), params[3].parse::<f64>().unwrap());
 
         Some(Transaction::new(
             params[0].parse::<u64>().unwrap(),
