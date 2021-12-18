@@ -188,8 +188,8 @@ impl Candidate {
             }
         }
         let true_first_trans_cond = first_trans_cond.clone();
-        let eof_cvar = Arc::new((Mutex::new(false), Condvar::new()));
-        let eof_cvar_clone = eof_cvar.clone();
+        let ended_cvar = Arc::new((Mutex::new(false), Condvar::new()));
+        let ended_cvar_clone = ended_cvar.clone();
         thread::spawn(move || {
             let services_addrs_str_recv = &HashMap::from([
                 (AIRLINE_ADDR, ServiceName::Airline.string_name()),
@@ -201,7 +201,7 @@ impl Candidate {
                 Box::new(socket_data_recv),
                 services_addrs_str_recv,
                 true_first_trans_cond,
-                eof_cvar_clone
+                ended_cvar_clone
             );
 
             loop {
@@ -233,7 +233,7 @@ impl Candidate {
             port_transaction as u64,
             Box::new(socket_data_send),
             first_trans_cond.clone(),
-            eof_cvar,
+            ended_cvar,
             services_addrs_str,
             vec,
             Duration::from_millis(10000),

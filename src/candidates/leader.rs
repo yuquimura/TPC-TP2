@@ -74,9 +74,10 @@ impl Leader {
                     }
                 }
             }
+            // Esperar Reintentos por un tiempo X antes de terminar la ejecucion.
             let mut result = lock_clone.write().expect("El lock esta envenenado");
             *result = true;
-        }); // esperar convar en true.
+        }); 
         loop {
             self.recv(recv,send);
             let result_read = lock.read().expect("El lock esta envenenado");

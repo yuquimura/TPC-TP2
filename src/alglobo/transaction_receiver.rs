@@ -10,7 +10,8 @@ use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::transaction_messages::transaction_code::TransactionCode;
 use crate::transaction_messages::transaction_info::TransactionInfo;
 use crate::transaction_messages::transaction_response::TransactionResponse;
-use crate::transaction_messages::types::{LOG_BYTE, RESPONSE_BYTE};
+use crate::transaction_messages::transaction_retry::TransactionRetry;
+use crate::transaction_messages::types::{LOG_BYTE, RESPONSE_BYTE, RETRY_BYTE};
 
 use super::transaction_state::TransactionState;
 use super::types::CurrentTransaction;
@@ -21,7 +22,7 @@ pub struct TransactionReceiver {
     udp_receiver: Box<dyn UdpSocketReceiver + Send>,
     services_addrs: HashMap<String, String>,
     curr_transaction: CurrentTransaction,
-    is_eof: Arc<(Mutex<bool>, Condvar)>,
+    ended: Arc<(Mutex<bool>, Condvar)>,
 }
 
 impl TransactionReceiver {
@@ -31,7 +32,7 @@ impl TransactionReceiver {
         udp_receiver: Box<dyn UdpSocketReceiver + Send>,
         services_addrs_str: &HashMap<&str, String>,
         curr_transaction: CurrentTransaction,
-        is_eof: Arc<(Mutex<bool>, Condvar)>,
+        ended: Arc<(Mutex<bool>, Condvar)>,
     ) -> Self {
         let services_addrs = services_addrs_str
             .iter()
@@ -42,7 +43,7 @@ impl TransactionReceiver {
             udp_receiver,
             services_addrs,
             curr_transaction,
-            is_eof
+            ended
         }
     }
 
@@ -199,6 +200,26 @@ impl TransactionReceiver {
         Ok(())
     }
 
+    fn process_retry(&mut self, message: &[u8]) -> Result<(), TransactionError> {
+        let mut ended = self.ended.0.lock()
+            .expect("[Transaction Receiver] Lock de finilizacion envenenado");
+        if !*ended { 
+            return Ok(()); 
+        }
+        
+        let new_transaction = TransactionRetry::new_transaction(message);
+        let mut opt_transaction = self
+            .curr_transaction
+            .0
+            .lock()
+            .expect("[Transaction Manager] Lock de transaccion envenenado");
+        *opt_transaction = Some(Box::new(new_transaction));
+
+        *ended = false;
+        self.ended.1.notify_all();
+        Ok(())
+    }
+
     /// # Errors
     ///
     /// `TransactionError::None` => Se recibio una transaccion,
@@ -224,6 +245,7 @@ impl TransactionReceiver {
         match info_type {
             RESPONSE_BYTE => self.process_response(message, addr),
             LOG_BYTE => self.process_log(message),
+            RETRY_BYTE => self.process_retry(&message),
             _ => panic!("Byte de informacion desconocido"),
         }
     }
@@ -239,7 +261,7 @@ mod tests {
         sockets::udp_socket_receiver::MockUdpSocketReceiver,
         transaction_messages::{
             transaction_code::TransactionCode, transaction_info::TransactionInfo,
-            transaction_log::TransactionLog, transaction_response::TransactionResponse,
+            transaction_log::TransactionLog, transaction_response::TransactionResponse, transaction_retry::TransactionRetry,
         },
     };
 
@@ -396,5 +418,60 @@ mod tests {
         );
 
         assert!(receiver.recv().is_ok());
+    }
+
+    #[test]
+    fn it_should_update_current_transaction_and_set_ended_false_if_retry_msg_and_ended() {
+        let services_addrs = HashMap::from([
+            ("127.0.0.1:49156", ServiceName::Airline.string_name()),
+            ("127.0.0.1:49157", ServiceName::Hotel.string_name()),
+            ("127.0.0.1:49158", ServiceName::Bank.string_name()),
+        ]);
+
+        let transaction_id = 0;
+        let services_info_vec = [
+            (ServiceName::Airline.string_name(), 100.0),
+            (ServiceName::Hotel.string_name(), 200.0),
+            (ServiceName::Bank.string_name(), 300.0)
+        ];
+
+        let mut message = TransactionRetry::build(
+            transaction_id, 
+            services_info_vec[0].1, 
+            services_info_vec[1].1, 
+            services_info_vec[2].1
+        );
+        TransactionInfo::add_padding(&mut message);
+
+        let mut mock_socket = MockUdpSocketReceiver::new();
+
+        let msg_len = message.len();
+        mock_socket
+            .expect_recv()
+            .withf(move |n_bytes| n_bytes == &msg_len)
+            .times(1)
+            .returning(move |_| Ok((message.clone(), "".to_string())));
+
+        let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
+        let curr_transaction_clone = curr_transaction.clone();
+        
+        let ended = Arc::new((Mutex::new(true), Condvar::new()));
+        let ended_clone =  ended.clone();
+        
+        let mut receiver = TransactionReceiver::new(
+            0,
+            Box::new(mock_socket),
+            &services_addrs,
+            curr_transaction_clone,
+            ended_clone
+        );
+
+        assert!(receiver.recv().is_ok());
+        let opt_transaction = curr_transaction.0.lock().unwrap();
+        assert!(!opt_transaction.is_none());
+        let transaction = opt_transaction.as_ref().unwrap();
+        let services_info = transaction.all_services();
+        assert_eq!(services_info, HashMap::from(services_info_vec));
+        assert!(!*ended.0.lock().unwrap());
     }
 }
