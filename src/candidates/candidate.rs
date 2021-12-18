@@ -188,7 +188,8 @@ impl Candidate {
             }
         }
         let true_first_trans_cond = first_trans_cond.clone();
-
+        let eof_cvar = Arc::new((Mutex::new(false), Condvar::new()));
+        let eof_cvar_clone = eof_cvar.clone();
         thread::spawn(move || {
             let services_addrs_str_recv = &HashMap::from([
                 (AIRLINE_ADDR, ServiceName::Airline.string_name()),
@@ -200,6 +201,7 @@ impl Candidate {
                 Box::new(socket_data_recv),
                 services_addrs_str_recv,
                 true_first_trans_cond,
+                eof_cvar_clone
             );
 
             loop {
@@ -214,21 +216,7 @@ impl Candidate {
             }
         }
 
-        /*let mut socket_info_recv = UdpSocketWrap::new(None);
-        let mut socket_info_send = UdpSocketWrap::new(None);
-        for port in VEC_PORT_INFO.clone() {
-            let socket_info_recv_new = UdpSocketWrap::new_with_addr(None, port.to_string());
-            if let Ok(socket_new_aux) = socket_info_recv_new {
-                socket_info_recv = socket_new_aux;
-                if let Ok(socket_aux) = socket_info_recv.try_clone() {
-                    socket_info_send = socket_aux;
-                    break;
-                }
-            }
-        }*/
         let mut leader = Leader::new(
-            /*Box::new(None),
-            Box::new(None),*/
             VEC_PORT_INFO.clone(),
         );
         let services_addrs_str = &HashMap::from([
@@ -245,6 +233,7 @@ impl Candidate {
             port_transaction as u64,
             Box::new(socket_data_send),
             first_trans_cond.clone(),
+            eof_cvar,
             services_addrs_str,
             vec,
             Duration::from_millis(10000),

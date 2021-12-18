@@ -1,6 +1,6 @@
 use std::fs::{OpenOptions, File};
 use std::io::Write;
-use std::sync::MutexGuard;
+use std::sync::{MutexGuard, Condvar, Mutex, Arc};
 use std::{collections::HashMap, time::Duration};
 
 use crate::candidates::constants::DEFAULT_IP;
@@ -20,6 +20,7 @@ pub struct TransactionManager {
     pub id: u64,
     udp_sender: Box<dyn UdpSocketSender + Send>,
     curr_transaction: CurrentTransaction,
+    is_eof: Arc<(Mutex<bool>, Condvar)>,
     services_addrs: HashMap<String, String>,
     replicas_addrs: Vec<String>,
     timeout: Duration,
@@ -31,6 +32,7 @@ impl TransactionManager {
         id: u64,
         udp_sender: Box<dyn UdpSocketSender + Send>,
         curr_transaction: CurrentTransaction,
+        is_eof: Arc<(Mutex<bool>, Condvar)>,
         services_addrs_str: &HashMap<&str, String>,
         replicas_addrs_str: &[String],
         timeout: Duration,
@@ -61,6 +63,7 @@ impl TransactionManager {
             id,
             udp_sender,
             curr_transaction,
+            is_eof,
             services_addrs,
             replicas_addrs,
             timeout,
@@ -351,6 +354,7 @@ mod tests {
             id,
             Box::new(mock_sender),
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new())),
             &services_addrs_str,
             &vec![],
             Duration::from_secs(0),
@@ -429,6 +433,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         thread::spawn(move || loop {
@@ -439,6 +444,7 @@ mod tests {
             id,
             Box::new(mock_sender),
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new())),
             &services_addrs_str,
             &vec![],
             Duration::from_secs(0),
@@ -542,6 +548,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         thread::spawn(move || loop {
@@ -552,6 +559,7 @@ mod tests {
             id,
             Box::new(mock_sender),
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new())),
             &services_addrs_str,
             &vec![],
             Duration::from_secs(2),
@@ -661,6 +669,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         thread::spawn(move || loop {
@@ -671,6 +680,7 @@ mod tests {
             id,
             Box::new(mock_sender),
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new())),
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(2),
@@ -782,6 +792,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         thread::spawn(move || loop {
@@ -792,6 +803,7 @@ mod tests {
             id,
             Box::new(mock_sender),
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new())),
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(1),
@@ -906,6 +918,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         thread::spawn(move || loop {
@@ -916,6 +929,7 @@ mod tests {
             id,
             Box::new(mock_sender),
             curr_transaction.clone(),
+            Arc::new((Mutex::new(false), Condvar::new())),
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(1),

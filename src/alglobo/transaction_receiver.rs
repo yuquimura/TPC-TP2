@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::mem::size_of;
+use std::sync::{Condvar, Mutex, Arc};
 
 use crate::alglobo::transaction_error::TransactionError;
 use crate::services::service_name::ServiceName;
@@ -20,6 +21,7 @@ pub struct TransactionReceiver {
     udp_receiver: Box<dyn UdpSocketReceiver + Send>,
     services_addrs: HashMap<String, String>,
     curr_transaction: CurrentTransaction,
+    is_eof: Arc<(Mutex<bool>, Condvar)>,
 }
 
 impl TransactionReceiver {
@@ -29,6 +31,7 @@ impl TransactionReceiver {
         udp_receiver: Box<dyn UdpSocketReceiver + Send>,
         services_addrs_str: &HashMap<&str, String>,
         curr_transaction: CurrentTransaction,
+        is_eof: Arc<(Mutex<bool>, Condvar)>,
     ) -> Self {
         let services_addrs = services_addrs_str
             .iter()
@@ -39,6 +42,7 @@ impl TransactionReceiver {
             udp_receiver,
             services_addrs,
             curr_transaction,
+            is_eof
         }
     }
 
@@ -281,6 +285,7 @@ mod tests {
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         assert!(receiver.recv().is_ok());
@@ -323,6 +328,7 @@ mod tests {
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         assert!(receiver.recv().is_ok());
@@ -386,6 +392,7 @@ mod tests {
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
+            Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         assert!(receiver.recv().is_ok());
