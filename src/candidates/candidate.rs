@@ -229,7 +229,7 @@ impl Candidate {
             vec_addr.push(DEFAULT_IP.to_string() + port.to_string().as_str());
         }
         let vec = &vec_addr;
-        let mut transaction_manager = TransactionManager::new(
+        let transaction_manager = TransactionManager::new(
             port_transaction as u64,
             Box::new(socket_data_send),
             first_trans_cond.clone(),
@@ -239,8 +239,8 @@ impl Candidate {
             Duration::from_millis(10000),
             Some(ABORT_FILE.to_string())
         );
-        let id = transaction_manager.process(None);
-        leader.start_leader(transaction_manager, id, &mut self.udp_receiver, &mut self.udp_sender);
+        //let id = transaction_manager.process(None);
+        leader.start_leader(transaction_manager, 0 /*id*/, &mut self.udp_receiver, &mut self.udp_sender);
     }
 }
 
