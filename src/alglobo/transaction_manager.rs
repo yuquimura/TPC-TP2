@@ -261,7 +261,7 @@ impl TransactionManager {
             let transaction = opt_transaction
                 .as_ref()
                 .expect("[Transaction Manager] La transaccion actual deberia exitir");
-            let mut representation = transaction.representation();
+            let mut representation = transaction.representation(false);
             representation.push('\n');
             abort_file
                 .write_all(representation.as_bytes())

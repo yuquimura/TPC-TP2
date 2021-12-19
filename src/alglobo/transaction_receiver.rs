@@ -1,19 +1,16 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
-use std::mem::size_of;
 use std::sync::{Condvar, Mutex, Arc};
 
 use crate::alglobo::transaction_error::TransactionError;
-use crate::services::service_name::ServiceName;
 use crate::sockets::socket_error::SocketError;
 use crate::sockets::udp_socket_receiver::UdpSocketReceiver;
 use crate::transaction_messages::transaction_code::TransactionCode;
 use crate::transaction_messages::transaction_info::TransactionInfo;
+use crate::transaction_messages::transaction_log::TransactionLog;
 use crate::transaction_messages::transaction_response::TransactionResponse;
 use crate::transaction_messages::transaction_retry::TransactionRetry;
 use crate::transaction_messages::types::{LOG_BYTE, RESPONSE_BYTE, RETRY_BYTE};
 
-use super::transaction_state::TransactionState;
 use super::transactionable::Transactionable;
 use super::types::CurrentTransaction;
 
@@ -94,113 +91,23 @@ impl TransactionReceiver {
         Ok(())
     }
 
-    pub fn update_transaction_state(
-        &mut self,
-        message: &[u8],
-        service_name: String,
-        idx_state: usize,
-        idx_fee: usize,
-    ) -> Result<(), TransactionError> {
+    pub fn process_log(&mut self, message: Vec<u8>) -> Result<(), TransactionError> {        
         let mut opt_transaccion = self
             .curr_transaction
             .0
             .lock()
             .expect("[Transaction Receiver] Lock de transaccion envenenado");
-        let transaction = match opt_transaccion.as_mut() {
-            Some(value) => value,
-            None => return Err(TransactionError::None),
-        };
-
-        let state = TransactionState::from_byte(message[idx_state]);
-        let fee_bytes: [u8; size_of::<f64>()] = message[idx_fee..idx_fee + size_of::<f64>()]
-            .try_into()
-            .expect("[Transaction Receiver] Los pagos deberian ocupar 8 bytes");
-        let fee = f64::from_be_bytes(fee_bytes);
-
-        println!(
-            "[Transaction Receiver] Actualizar transaccion del servicioo {}",
-            service_name
-        );
-        println!(
-            "[Transaction Receiver] Actualizar transaccion con estado {}",
-            state
-        );
-        println!(
-            "[Transaction Receiver] Actualizar transaccion con pago {}",
-            fee
-        );
-
-        match state {
-            TransactionState::Waiting => transaction.wait(service_name, Some(fee)),
-            TransactionState::Accepted => transaction.accept(service_name, Some(fee)),
-            TransactionState::Aborted => transaction.abort(service_name, Some(fee)),
-            TransactionState::Commited => transaction.commit(service_name, Some(fee)),
-        };
-        Ok(())
-    }
-
-    pub fn process_log(&mut self, message: Vec<u8>) -> Result<(), TransactionError> {
-        const IDX_ID: usize = 1;
-        const IDX_AIRLINE_STATE: usize = IDX_ID + size_of::<u64>();
-        const IDX_AIRLINE_FEE: usize = IDX_AIRLINE_STATE + 1;
-
-        const IDX_HOTEL_STATE: usize = IDX_AIRLINE_FEE + size_of::<u64>();
-        const IDX_HOTEL_FEE: usize = IDX_HOTEL_STATE + 1;
-
-        const IDX_BANK_STATE: usize = IDX_HOTEL_FEE + size_of::<u64>();
-        const IDX_BANK_FEE: usize = IDX_BANK_STATE + 1;
-        {
-            let mut opt_transaccion = self
-                .curr_transaction
-                .0
-                .lock()
-                .expect("[Transaction Receiver] Lock de transaccion envenenado");
-            let transaction = match opt_transaccion.as_mut() {
-                Some(value) => value,
-                None => return Err(TransactionError::None),
-            };
-
-            let id_bytes: [u8; size_of::<u64>()] = message[IDX_ID..IDX_AIRLINE_STATE]
-                .try_into()
-                .expect("[Transaction Receiver] Los ids deberian ocupar 8 bytes");
-            let transaction_id = u64::from_be_bytes(id_bytes);
-            println!(
-                "[Transaction Receiver] Actualizar transaccion de id {}",
-                transaction_id
-            );
-            transaction.set_id(transaction_id);
-        }
-
-        self.update_transaction_state(
-            &message,
-            ServiceName::Airline.string_name(),
-            IDX_AIRLINE_STATE,
-            IDX_AIRLINE_FEE,
-        )
-        .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
-
-        self.update_transaction_state(
-            &message,
-            ServiceName::Hotel.string_name(),
-            IDX_HOTEL_STATE,
-            IDX_HOTEL_FEE,
-        )
-        .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
-
-        self.update_transaction_state(
-            &message,
-            ServiceName::Bank.string_name(),
-            IDX_BANK_STATE,
-            IDX_BANK_FEE,
-        )
-        .expect("[Transaction Receiver] Actualiza la transaccion no deberia fallar");
+        let new_transaction = TransactionLog::new_transaction(&message);
+        let repr = new_transaction.representation(true);
+        println!("[Transaction Receiver] Actualizacion: {}", repr);
+        *opt_transaccion = Some(Box::new(new_transaction));
         self.curr_transaction.1.notify_all();
         Ok(())
     }
 
     fn process_retry(&mut self, message: &[u8]) -> Result<(), TransactionError> {
         let new_transaction = TransactionRetry::new_transaction(message);
-        let repr = new_transaction.representation();
+        let repr = new_transaction.representation(false);
 
         let mut ended = self.ended.0.lock()
             .expect("[Transaction Receiver] Lock de finilizacion envenenado");

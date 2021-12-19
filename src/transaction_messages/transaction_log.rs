@@ -1,4 +1,13 @@
-use crate::alglobo::transaction_state::TransactionState;
+use std::{convert::TryInto, mem::size_of, collections::HashMap};
+
+use crate::{
+    alglobo::{
+        transaction_state::TransactionState, 
+        transaction::Transaction,
+        transactionable::Transactionable
+    }, 
+    services::service_name::ServiceName
+};
 
 use super::types::LOG_BYTE;
 
@@ -43,6 +52,39 @@ impl TransactionLog {
         message.append(&mut bank_info.1.to_be_bytes().to_vec());
 
         message
+    }
+
+    pub fn new_transaction(message: &[u8]) -> Transaction {
+        let mut begin = 1;
+        let id_bytes: [u8; size_of::<u64>()] = message[begin..begin+size_of::<u64>()]
+            .try_into()
+            .expect("[Transaction Receiver] Los ids deberian ocupar 8 bytes");
+        let id = u64::from_be_bytes(id_bytes);
+        begin += size_of::<u64>();
+
+        let services_info = HashMap::from([
+            (ServiceName::Airline.string_name(),0.0),
+            (ServiceName::Hotel.string_name(),0.0),
+            (ServiceName::Bank.string_name(),0.0),
+        ]);
+        let mut transaction = Transaction::new(id, services_info.clone());
+
+        for (name, _) in services_info.iter() {
+            let state = TransactionState::from_byte(message[begin]);
+            begin += 1;
+            let fee_bytes: [u8; size_of::<u64>()] = message[begin..begin+size_of::<u64>()]
+                .try_into()
+                .expect("[Transaction Receiver] Los pagos deberian ocupar 8 bytes");
+            let fee = f64::from_be_bytes(fee_bytes);
+            begin += size_of::<u64>();
+            match state {
+                TransactionState::Waiting => transaction.wait(name.clone(), Some(fee)),
+                TransactionState::Accepted => transaction.accept(name.clone(), Some(fee)),
+                TransactionState::Aborted => transaction.abort(name.clone(), Some(fee)),
+                TransactionState::Commited => transaction.commit(name.clone(), Some(fee)),
+            };
+        };
+        transaction
     }
 }
 

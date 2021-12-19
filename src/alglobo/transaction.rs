@@ -188,7 +188,7 @@ impl Transactionable for Transaction {
         msg
     }
 
-    fn representation(&self) -> String {
+    fn representation(&self, verbose: bool) -> String {
         let airline_info = self
             .services
             .get(&ServiceName::Airline.string_name())
@@ -201,13 +201,30 @@ impl Transactionable for Transaction {
             .services
             .get(&ServiceName::Bank.string_name())
             .expect("[Transaction] Nombre de servicio deberia existir");
-        format!(
-            "{},{},{},{}",
-            self.id,
-            airline_info.1,
-            hotel_info.1,
-            bank_info.1,
-        )
+        if verbose {
+            format!(
+                "Id:{}, {}:({},{}), {}:({},{}), {}:({},{})",
+                self.id,
+                ServiceName::Airline.string_name(),
+                airline_info.0,
+                airline_info.1,
+                ServiceName::Hotel.string_name(),
+                hotel_info.0,
+                hotel_info.1,
+                ServiceName::Bank.string_name(),
+                bank_info.0,
+                bank_info.1,
+            )
+        } else {
+            format!(
+                "{},{},{},{}",
+                self.id,
+                airline_info.1,
+                hotel_info.1,
+                bank_info.1,
+            )
+        }
+        
     }
 }
 
