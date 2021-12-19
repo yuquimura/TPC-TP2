@@ -197,7 +197,6 @@ impl Candidate {
                 (BANK_ADDR, ServiceName::Bank.string_name()),
             ]);
             let mut transaction_receiver = TransactionReceiver::new(
-                0,
                 Box::new(socket_data_recv),
                 services_addrs_str_recv,
                 true_first_trans_cond,
@@ -242,38 +241,3 @@ impl Candidate {
         leader.start_leader(transaction_manager, &mut self.udp_receiver, &mut self.udp_sender);
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::{
-//         sockets::udp_socket_receiver::MockUdpSocketReceiver,
-//         sockets::udp_socket_sender::MockUdpSocketSender,
-//         candidates::election_code::ElectionCode,
-//     };
-
-//     #[test]
-//     fn it_should_receive_alive_message(){
-//         let address = "127.0.0.1:49156";
-//         let mut mock_receiver = MockUdpSocketReceiver::new();
-//         let mut mock_sender = MockUdpSocketSender::new();
-//         let message = ElectionMessage::build(ElectionCode::Alive);
-//         let messages = [message.clone()];
-//         mock_receiver
-//             .expect_recv()
-//             .withf(|n_bytes| n_bytes == &ElectionMessage::size())
-//             .times(1)
-//             .returning(move |_| Ok((message.clone(),address.to_string())));
-//         mock_sender
-//             .expect_send_to()
-//             .withf(move |buf, addr| {
-//                 messages.contains(&buf.to_vec()) && addr == address
-//             })
-//             .times(1)
-//             .returning(|_, _| Ok(()));
-//         let duration = Duration::from_millis(0);
-//         let mut candidate = Candidate::new(Box::new(mock_receiver),Box::new(mock_sender),duration);
-//         candidate.send_to(&address);
-
-//     }
-// }

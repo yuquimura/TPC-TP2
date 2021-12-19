@@ -14,9 +14,7 @@ use crate::transaction_messages::types::{LOG_BYTE, RESPONSE_BYTE, RETRY_BYTE};
 use super::transactionable::Transactionable;
 use super::types::CurrentTransaction;
 
-#[allow(dead_code)]
 pub struct TransactionReceiver {
-    id: u64,
     udp_receiver: Box<dyn UdpSocketReceiver + Send>,
     services_addrs: HashMap<String, String>,
     curr_transaction: CurrentTransaction,
@@ -26,7 +24,6 @@ pub struct TransactionReceiver {
 impl TransactionReceiver {
     #[must_use]
     pub fn new(
-        id: u64,
         udp_receiver: Box<dyn UdpSocketReceiver + Send>,
         services_addrs_str: &HashMap<&str, String>,
         curr_transaction: CurrentTransaction,
@@ -37,7 +34,6 @@ impl TransactionReceiver {
             .map(|(addr, name)| ((*addr).to_string(), name.clone()))
             .collect();
         TransactionReceiver {
-            id,
             udp_receiver,
             services_addrs,
             curr_transaction,
@@ -175,7 +171,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        alglobo::{transaction_state::TransactionState, transactionable::MockTransactionable},
+        alglobo::{transaction_state::TransactionState, transactionable::{MockTransactionable}},
         services::service_name::ServiceName,
         sockets::udp_socket_receiver::MockUdpSocketReceiver,
         transaction_messages::{
@@ -222,7 +218,6 @@ mod tests {
             .returning(|_, _| true);
 
         let mut receiver = TransactionReceiver::new(
-            0,
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
@@ -265,7 +260,6 @@ mod tests {
             .returning(|_, _| true);
 
         let mut receiver = TransactionReceiver::new(
-            0,
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
@@ -300,43 +294,35 @@ mod tests {
             .times(1)
             .returning(move |_| Ok((message.clone(), "".to_string())));
 
-        let mut mock_transaction = MockTransactionable::new();
-        mock_transaction
-            .expect_set_id()
-            .withf(move |id| id == &transaction_id)
-            .times(1)
-            .returning(move |_| true);
-        mock_transaction
-            .expect_wait()
-            .withf(move |name, opt_fee| {
-                name == &ServiceName::Airline.string_name() && opt_fee.unwrap() == airline_info.1
-            })
-            .times(1)
-            .returning(|_, _| true);
-        mock_transaction
-            .expect_accept()
-            .withf(move |name, opt_fee| {
-                name == &ServiceName::Hotel.string_name() && opt_fee.unwrap() == hotel_info.1
-            })
-            .times(1)
-            .returning(|_, _| true);
-        mock_transaction
-            .expect_abort()
-            .withf(move |name, opt_fee| {
-                name == &ServiceName::Bank.string_name() && opt_fee.unwrap() == bank_info.1
-            })
-            .times(1)
-            .returning(|_, _| true);
-
+        let curr_transaction: CurrentTransaction = Arc::new((Mutex::new(None), Condvar::new()));
         let mut receiver = TransactionReceiver::new(
-            0,
             Box::new(mock_socket),
             &services_addrs,
-            Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
+            curr_transaction.clone(),
             Arc::new((Mutex::new(false), Condvar::new()))
         );
 
         assert!(receiver.recv().is_ok());
+        let opt_transaction = curr_transaction.0.lock().unwrap();
+        let transaction = opt_transaction.as_ref().unwrap();
+        let waiting_services = transaction.waiting_services();
+        let accepted_services = transaction.accepted_services();
+        let not_aborted_services = transaction.not_aborted_services();
+        assert_eq!(
+            waiting_services,
+            HashMap::from([(ServiceName::Airline.string_name(), 100.0)])
+        );
+        assert_eq!(
+            accepted_services,
+            HashMap::from([(ServiceName::Hotel.string_name(), 200.0)])
+        );
+        assert_eq!(
+            not_aborted_services,
+            HashMap::from([
+                (ServiceName::Airline.string_name(), 100.0),
+                (ServiceName::Hotel.string_name(), 200.0),
+            ])
+        );
     }
 
     #[test]
@@ -378,7 +364,6 @@ mod tests {
         let ended_clone =  ended.clone();
         
         let mut receiver = TransactionReceiver::new(
-            0,
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction_clone,
@@ -433,7 +418,6 @@ mod tests {
         let ended_clone =  ended.clone();
         
         let mut receiver = TransactionReceiver::new(
-            0,
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction_clone,
@@ -492,7 +476,6 @@ mod tests {
         let ended_clone =  ended.clone();
         
         let mut receiver = TransactionReceiver::new(
-            0,
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction_clone,

@@ -466,14 +466,7 @@ mod tests {
             .times(waiting_services.len())
             .returning(|_, _| Ok(()));
 
-        // mock_receiver
-        //     .expect_recv()
-        //     .returning(move |_|
-        //         Err(SocketError::Timeout)
-        //     );
-
         let mut receiver = TransactionReceiver::new(
-            id,
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
@@ -588,7 +581,6 @@ mod tests {
             .returning(move |_| Err(SocketError::Timeout));
 
         let mut receiver = TransactionReceiver::new(
-            id,
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
@@ -709,7 +701,6 @@ mod tests {
             .returning(move |_| Err(SocketError::Timeout));
 
         let mut receiver = TransactionReceiver::new(
-            id,
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
@@ -832,7 +823,6 @@ mod tests {
             .returning(move |_| Err(SocketError::Timeout));
 
         let mut receiver = TransactionReceiver::new(
-            id,
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
@@ -958,7 +948,6 @@ mod tests {
             .returning(move |_| Err(SocketError::Timeout));
 
         let mut receiver = TransactionReceiver::new(
-            id,
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
