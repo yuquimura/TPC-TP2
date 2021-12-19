@@ -20,6 +20,7 @@ impl fmt::Display for TransactionState {
 }
 
 impl TransactionState {
+    #[must_use]
     pub fn byte_code(&self) -> u8 {
         match *self {
             TransactionState::Waiting => b'W',
@@ -29,10 +30,11 @@ impl TransactionState {
         }
     }
 
-    /// Panics
+    /// # Panics
     ///
     /// Esta funcion paniquea cuando se recibe un byte
     /// para el cual no existe un estado de transaccion
+    #[must_use]
     pub fn from_byte(byte: u8) -> Self {
         let err = format!("[TransactionState] No hay estado para el byte: {}", byte);
         match byte {

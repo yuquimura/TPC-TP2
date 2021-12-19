@@ -1,10 +1,10 @@
-use std::fs::{OpenOptions, File};
+use std::fs::{File, OpenOptions};
 use std::io::Write;
-use std::sync::{MutexGuard, Condvar, Mutex, Arc, RwLock};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, RwLock};
 use std::thread::sleep;
 use std::{collections::HashMap, time::Duration};
 
-use crate::candidates::constants::{DEFAULT_IP, SLEEP_MANAGER, END_TIMEOUT};
+use crate::candidates::constants::{DEFAULT_IP, END_TIMEOUT, SLEEP_MANAGER};
 use crate::file_reader::file_iterator::FileIterator;
 use crate::{
     sockets::udp_socket_sender::UdpSocketSender,
@@ -26,10 +26,11 @@ pub struct TransactionManager {
     services_addrs: HashMap<String, String>,
     replicas_addrs: Vec<String>,
     timeout: Duration,
-    abort_file_opt: Option<File>
+    abort_file_opt: Option<File>,
 }
 
 impl TransactionManager {
+    #[must_use]
     pub fn new(
         my_port: u64,
         udp_sender: Box<dyn UdpSocketSender + Send>,
@@ -38,7 +39,7 @@ impl TransactionManager {
         services_addrs_str: &HashMap<&str, String>,
         replicas_addrs_str: &[String],
         timeout: Duration,
-        path_opt: Option<String>
+        path_opt: Option<String>,
     ) -> Self {
         let services_addrs = services_addrs_str
             .clone()
@@ -47,7 +48,7 @@ impl TransactionManager {
             .collect();
         let replicas_addrs = replicas_addrs_str
             .iter()
-            .map(|addr| addr.to_string())
+            .map(std::string::ToString::to_string)
             .collect();
         let mut abort_file_opt = None;
         if let Some(path) = path_opt {
@@ -57,10 +58,10 @@ impl TransactionManager {
                     .create(true)
                     .append(true)
                     .open(path)
-                    .expect("[Transaction Manager] Error al abrir archivo de fallas")
+                    .expect("[Transaction Manager] Error al abrir archivo de fallas"),
             );
         }
-        
+
         TransactionManager {
             my_port,
             udp_sender,
@@ -69,7 +70,7 @@ impl TransactionManager {
             services_addrs,
             replicas_addrs,
             timeout,
-            abort_file_opt
+            abort_file_opt,
         }
     }
 
@@ -77,13 +78,13 @@ impl TransactionManager {
         if let Some(transaction) = opt_transaction {
             self.update_current(transaction);
         }
-        if !self.prepare() {
-            self.abort();
-            self.persist_aborted();
-        } else {
+        if self.prepare() {
             // Seguir commiteando hasta que
             // todos los servicios respondan
             while !self.commit() {}
+        } else {
+            self.abort();
+            self.persist_aborted();
         }
 
         let opt_transaction = self.get_current();
@@ -155,7 +156,6 @@ impl TransactionManager {
     }
 
     pub fn commit(&mut self) -> bool {
-
         let transaction_id;
         let all_services;
         {
@@ -228,7 +228,6 @@ impl TransactionManager {
         let transaction_log;
         let transaction_id;
         {
-
             let opt_transaction = self.get_current();
             let transaction = opt_transaction
                 .as_ref()
@@ -271,45 +270,49 @@ impl TransactionManager {
     }
 
     fn get_current(&self) -> MutexGuard<'_, Option<Box<(dyn Transactionable + Send + 'static)>>> {
-        self
-            .curr_transaction
+        self.curr_transaction
             .0
             .lock()
             .expect("[Transaction Manager] Lock de transaccion envenenado")
     }
 
-    fn wait_end_while(&mut self, dur: Duration) -> Result<(), TransactionError>{
+    fn wait_end_while(&mut self, dur: Duration) -> Result<(), TransactionError> {
         let lock_err_msg = "[Transaction Manager] Lock de espera de finalizacion envenenado";
         {
             let mut ended = self.ended.0.lock().expect(lock_err_msg);
             *ended = true;
         }
-        println!("[Transaction Manager] Esperando {:#?} antes de finalizar", dur);
-        let res = self.ended.1.wait_timeout_while(
-            self.ended.0.lock().expect(lock_err_msg),
-            dur,
-             |ended| *ended
-        ).expect(lock_err_msg);
+        println!(
+            "[Transaction Manager] Esperando {:#?} antes de finalizar",
+            dur
+        );
+        let res = self
+            .ended
+            .1
+            .wait_timeout_while(self.ended.0.lock().expect(lock_err_msg), dur, |ended| {
+                *ended
+            })
+            .expect(lock_err_msg);
         if res.1.timed_out() {
             return Err(TransactionError::Timeout);
         }
         Ok(())
     }
 
-    pub fn run(&mut self, path: &str, finish_lock: Arc<RwLock::<bool>>) {
+    pub fn run(&mut self, path: &str, finish_lock: &Arc<RwLock<bool>>) {
         let start_line = self.process(None);
         if let Ok(mut reader) = FileIterator::new(path) {
             while !reader.ended() {
                 if let Some(transaction) = reader.next() {
                     if transaction.get_id() > start_line {
-                        sleep(SLEEP_MANAGER.clone());
+                        sleep(SLEEP_MANAGER);
                         self.process(Some(transaction));
                     }
                 }
             }
         }
 
-        while let Ok(_) = self.wait_end_while(END_TIMEOUT.clone()) {
+        while self.wait_end_while(END_TIMEOUT).is_ok() {
             println!("[Transaction Manager] Reintentando transaccion");
             self.process(None);
         }
@@ -363,7 +366,7 @@ mod tests {
         let bank_fee = 300.0;
         let transaction = Transaction::new(
             transaction_id,
-            HashMap::from([
+            &HashMap::from([
                 (ServiceName::Airline.string_name(), airline_fee),
                 (ServiceName::Hotel.string_name(), hotel_fee),
                 (ServiceName::Bank.string_name(), bank_fee),
@@ -402,7 +405,7 @@ mod tests {
             &services_addrs_str,
             &vec![],
             Duration::from_secs(0),
-            None
+            None,
         );
 
         manager.update_current(transaction);
@@ -429,7 +432,7 @@ mod tests {
         let bank_fee = 300.0;
         let transaction = Transaction::new(
             transaction_id,
-            HashMap::from([
+            &HashMap::from([
                 (ServiceName::Airline.string_name(), airline_fee),
                 (ServiceName::Hotel.string_name(), hotel_fee),
                 (ServiceName::Bank.string_name(), bank_fee),
@@ -470,7 +473,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         thread::spawn(move || loop {
@@ -485,7 +488,7 @@ mod tests {
             &services_addrs_str,
             &vec![],
             Duration::from_secs(0),
-            None
+            None,
         );
 
         manager.update_current(transaction);
@@ -514,7 +517,7 @@ mod tests {
         let bank_fee = 300.0;
         let transaction = Transaction::new(
             transaction_id,
-            HashMap::from([
+            &HashMap::from([
                 (ServiceName::Airline.string_name(), airline_fee),
                 (ServiceName::Hotel.string_name(), hotel_fee),
                 (ServiceName::Bank.string_name(), bank_fee),
@@ -584,7 +587,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         thread::spawn(move || loop {
@@ -599,7 +602,7 @@ mod tests {
             &services_addrs_str,
             &vec![],
             Duration::from_secs(2),
-            None
+            None,
         );
 
         manager.update_current(transaction);
@@ -633,7 +636,7 @@ mod tests {
         let bank_fee = 300.0;
         let transaction = Transaction::new(
             transaction_id,
-            HashMap::from([
+            &HashMap::from([
                 (ServiceName::Airline.string_name(), airline_fee),
                 (ServiceName::Hotel.string_name(), hotel_fee),
                 (ServiceName::Bank.string_name(), bank_fee),
@@ -704,7 +707,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         thread::spawn(move || loop {
@@ -719,7 +722,7 @@ mod tests {
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(2),
-            None
+            None,
         );
 
         manager.update_current(transaction);
@@ -752,7 +755,7 @@ mod tests {
         let bank_fee = 300.0;
         let mut transaction = Transaction::new(
             transaction_id,
-            HashMap::from([
+            &HashMap::from([
                 (ServiceName::Airline.string_name(), airline_fee),
                 (ServiceName::Hotel.string_name(), hotel_fee),
                 (ServiceName::Bank.string_name(), bank_fee),
@@ -826,7 +829,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         thread::spawn(move || loop {
@@ -841,7 +844,7 @@ mod tests {
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(1),
-            None
+            None,
         );
 
         manager.update_current(transaction);
@@ -874,7 +877,7 @@ mod tests {
         let bank_fee = 300.0;
         let mut transaction = Transaction::new(
             transaction_id,
-            HashMap::from([
+            &HashMap::from([
                 (ServiceName::Airline.string_name(), airline_fee),
                 (ServiceName::Hotel.string_name(), hotel_fee),
                 (ServiceName::Bank.string_name(), bank_fee),
@@ -951,7 +954,7 @@ mod tests {
             Box::new(mock_receiver),
             &services_addrs_str,
             curr_transaction.clone(),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         thread::spawn(move || loop {
@@ -966,7 +969,7 @@ mod tests {
             &services_addrs_str,
             &replicas_addrs,
             Duration::from_secs(1),
-            None
+            None,
         );
 
         manager.update_current(transaction);

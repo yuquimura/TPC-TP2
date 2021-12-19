@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::{
     services::service_name::ServiceName,
-    transaction_messages::{transaction_info::TransactionInfo, transaction_log::TransactionLog, transaction_retry::TransactionRetry},
+    transaction_messages::{
+        transaction_info::TransactionInfo, transaction_log::TransactionLog,
+        transaction_retry::TransactionRetry,
+    },
 };
 
 use super::{transaction_state::TransactionState, transactionable::Transactionable};
@@ -14,7 +17,7 @@ pub struct Transaction {
 
 impl Transaction {
     #[must_use]
-    pub fn new(id: u64, services_info: HashMap<String, f64>) -> Self {
+    pub fn new(id: u64, services_info: &HashMap<String, f64>) -> Self {
         let services = services_info
             .iter()
             .map(|(name, fee)| (name.clone(), (TransactionState::Waiting, *fee)))
@@ -25,14 +28,14 @@ impl Transaction {
 
     fn update_state(
         &mut self,
-        name: String,
+        name: &str,
         state: TransactionState,
-        pre_states: Vec<TransactionState>,
+        pre_states: &[TransactionState],
         opt_fee: Option<f64>,
     ) -> bool {
         let service = self
             .services
-            .get_mut(&name)
+            .get_mut(name)
             .expect("[Transaction] Nombre de servicio deberia existir");
 
         let is_valid;
@@ -44,7 +47,7 @@ impl Transaction {
         }
 
         if is_valid {
-            service.0 = state
+            service.0 = state;
         }
 
         is_valid
@@ -72,22 +75,22 @@ impl Transactionable for Transaction {
 
     fn wait(&mut self, name: String, opt_fee: Option<f64>) -> bool {
         let pre_states = vec![];
-        self.update_state(name, TransactionState::Waiting, pre_states, opt_fee)
+        self.update_state(&name, TransactionState::Waiting, &pre_states, opt_fee)
     }
 
     fn accept(&mut self, name: String, opt_fee: Option<f64>) -> bool {
         let pre_states = vec![TransactionState::Waiting];
-        self.update_state(name, TransactionState::Accepted, pre_states, opt_fee)
+        self.update_state(&name, TransactionState::Accepted, &pre_states, opt_fee)
     }
 
     fn abort(&mut self, name: String, opt_fee: Option<f64>) -> bool {
         let pre_states = vec![TransactionState::Waiting, TransactionState::Accepted];
-        self.update_state(name, TransactionState::Aborted, pre_states, opt_fee)
+        self.update_state(&name, TransactionState::Aborted, &pre_states, opt_fee)
     }
 
     fn commit(&mut self, name: String, opt_fee: Option<f64>) -> bool {
         let pre_states = vec![TransactionState::Accepted];
-        self.update_state(name, TransactionState::Commited, pre_states, opt_fee)
+        self.update_state(&name, TransactionState::Commited, &pre_states, opt_fee)
     }
 
     fn waiting_services(&self) -> HashMap<String, f64> {
@@ -217,13 +220,9 @@ impl Transactionable for Transaction {
         } else {
             format!(
                 "{},{},{},{}",
-                self.id,
-                airline_info.1,
-                hotel_info.1,
-                bank_info.1,
+                self.id, airline_info.1, hotel_info.1, bank_info.1,
             )
         }
-        
     }
 }
 
@@ -241,7 +240,7 @@ mod tests {
             (ServiceName::Bank.string_name(), 300.0),
             (ServiceName::Hotel.string_name(), 200.0),
         ]);
-        let transaction = Transaction::new(0, services.clone());
+        let transaction = Transaction::new(0, &services);
 
         let waiting_services = transaction.waiting_services();
 
@@ -254,7 +253,7 @@ mod tests {
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(0, HashMap::from(services));
+        let mut transaction = Transaction::new(0, &HashMap::from(services));
 
         transaction.accept(ServiceName::Airline.string_name(), None);
         transaction.accept(ServiceName::Bank.string_name(), None);
@@ -268,7 +267,7 @@ mod tests {
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(0, HashMap::from(services));
+        let mut transaction = Transaction::new(0, &HashMap::from(services));
 
         transaction.accept(ServiceName::Airline.string_name(), None);
         transaction.accept(ServiceName::Bank.string_name(), None);
@@ -284,7 +283,7 @@ mod tests {
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(id, HashMap::from(services));
+        let mut transaction = Transaction::new(id, &HashMap::from(services));
 
         let new_id = 1;
 
@@ -299,7 +298,7 @@ mod tests {
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(id, HashMap::from(services));
+        let mut transaction = Transaction::new(id, &HashMap::from(services));
 
         let new_airline_fee = 200.0;
         let new_hotel_fee = 300.0;
@@ -335,7 +334,7 @@ mod tests {
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(id, HashMap::from(services));
+        let mut transaction = Transaction::new(id, &HashMap::from(services));
 
         let new_airline_fee = 200.0;
         let new_hotel_fee = 300.0;
@@ -371,7 +370,7 @@ mod tests {
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(id, HashMap::from(services));
+        let mut transaction = Transaction::new(id, &HashMap::from(services));
 
         let new_airline_fee = 200.0;
         let new_hotel_fee = 300.0;
@@ -407,7 +406,7 @@ mod tests {
         let hotel = (ServiceName::Hotel.string_name(), 200.0);
         let bank = (ServiceName::Bank.string_name(), 300.0);
         let services = [airline, bank, hotel];
-        let mut transaction = Transaction::new(id, HashMap::from(services));
+        let mut transaction = Transaction::new(id, &HashMap::from(services));
 
         let new_airline_fee = 200.0;
         let new_hotel_fee = 300.0;

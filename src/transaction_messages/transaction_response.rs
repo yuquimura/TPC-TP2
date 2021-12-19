@@ -1,4 +1,4 @@
-use std::{mem::size_of, convert::TryInto};
+use std::{convert::TryInto, mem::size_of};
 
 use super::{transaction_code::TransactionCode, types::RESPONSE_BYTE};
 
@@ -50,6 +50,7 @@ impl TransactionResponse {
         }
     }
 
+    #[must_use]
     pub fn parse(message: &[u8]) -> (TransactionCode, u64) {
         let code = TransactionResponse::transaction_code(message[1]);
         let id_bytes: [u8; size_of::<u64>()] = message[2..2 + size_of::<u64>()]

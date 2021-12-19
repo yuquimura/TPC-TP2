@@ -2,9 +2,8 @@ use crate::alglobo::transaction_manager::TransactionManager;
 use crate::alglobo::transaction_receiver::TransactionReceiver;
 use crate::alglobo::types::CurrentTransaction;
 use crate::candidates::constants::{
-    AIRLINE_ADDR, BANK_ADDR, DEFAULT_IP, EMPTY, 
-    HOTEL_ADDR, VEC_PORT_DATA, VEC_PORT_INFO,
-    ABORT_FILE
+    ABORT_FILE, AIRLINE_ADDR, BANK_ADDR, DEFAULT_IP, EMPTY, HOTEL_ADDR, VEC_PORT_DATA,
+    VEC_PORT_INFO,
 };
 use crate::candidates::election_code::ElectionCode;
 use crate::candidates::election_message::ElectionMessage;
@@ -134,7 +133,6 @@ impl Candidate {
         let mut im_the_leader = true;
         for port in self.possible_ports.iter() {
             if port.parse::<i32>().unwrap() < self.my_port.parse::<i32>().unwrap() {
-
                 let message = ElectionMessage::build(ElectionCode::Election);
                 let his_address_vect: Vec<&str> = his_address.split(':').collect();
                 let address_to_send = his_address_vect[0].to_string() + ":" + port;
@@ -200,7 +198,7 @@ impl Candidate {
                 Box::new(socket_data_recv),
                 services_addrs_str_recv,
                 true_first_trans_cond,
-                ended_cvar_clone
+                ended_cvar_clone,
             );
 
             loop {
@@ -215,9 +213,7 @@ impl Candidate {
             }
         }
 
-        let mut leader = Leader::new(
-            VEC_PORT_INFO.clone(),
-        );
+        let mut leader = Leader::new(VEC_PORT_INFO.clone());
         let services_addrs_str = &HashMap::from([
             (AIRLINE_ADDR, ServiceName::Airline.string_name()),
             (HOTEL_ADDR, ServiceName::Hotel.string_name()),
@@ -236,8 +232,12 @@ impl Candidate {
             services_addrs_str,
             vec,
             Duration::from_millis(10000),
-            Some(ABORT_FILE.to_string())
+            Some(ABORT_FILE.to_string()),
         );
-        leader.start_leader(transaction_manager, &mut self.udp_receiver, &mut self.udp_sender);
+        leader.start_leader(
+            transaction_manager,
+            &mut self.udp_receiver,
+            &mut self.udp_sender,
+        );
     }
 }

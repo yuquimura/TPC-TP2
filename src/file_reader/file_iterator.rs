@@ -63,7 +63,7 @@ impl Iterator for FileIterator {
 
         Some(Transaction::new(
             params[0].parse::<u64>().unwrap(),
-            services_info,
+            &services_info,
         ))
     }
 }

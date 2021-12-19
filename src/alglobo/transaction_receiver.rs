@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{Condvar, Mutex, Arc};
+use std::sync::{Arc, Condvar, Mutex};
 
 use crate::alglobo::transaction_error::TransactionError;
 use crate::sockets::socket_error::SocketError;
@@ -37,20 +37,25 @@ impl TransactionReceiver {
             udp_receiver,
             services_addrs,
             curr_transaction,
-            ended
+            ended,
         }
     }
 
+    /// # Errors
+    ///
+    /// `TransactionError::WrongId` => La respuesta
+    /// recibida corresponde a una transaccion antigua
+    /// `TransactionError::None` => La tranaccion actual
+    /// no existe
     pub fn process_response(
         &mut self,
-        response: Vec<u8>,
-        addr: String,
+        response: &[u8],
+        addr: &str,
     ) -> Result<(), TransactionError> {
-        let (transaction_code, transaction_id) = 
-            TransactionResponse::parse(&response); 
+        let (transaction_code, transaction_id) = TransactionResponse::parse(response);
         let service_name = self
             .services_addrs
-            .get(&addr)
+            .get(addr)
             .expect("[Transaction Receiver] Direccion de servicio web desconocida");
         println!(
             "[Transaction Receiver] Id-Transaccion: {}, Operacion: {}, Entidad: {}",
@@ -81,49 +86,59 @@ impl TransactionReceiver {
             TransactionCode::Commit => {
                 transaction.commit(service_name.to_string(), None);
             }
-            _ => println!("Codigo de transaccion no esperado: {}", transaction_code),
+            TransactionCode::Prepare => {
+                println!("Codigo de transaccion no esperado: {}", transaction_code)
+            }
         }
         self.curr_transaction.1.notify_all();
         Ok(())
     }
 
-    pub fn process_log(&mut self, message: Vec<u8>) -> Result<(), TransactionError> {        
+    pub fn process_log(&mut self, message: &[u8]) {
         let mut opt_transaccion = self
             .curr_transaction
             .0
             .lock()
             .expect("[Transaction Receiver] Lock de transaccion envenenado");
-        let new_transaction = TransactionLog::new_transaction(&message);
+        let new_transaction = TransactionLog::new_transaction(message);
         let repr = new_transaction.representation(true);
         println!("[Transaction Receiver] Actualizacion: {}", repr);
         *opt_transaccion = Some(Box::new(new_transaction));
         self.curr_transaction.1.notify_all();
-        Ok(())
     }
 
-    fn process_retry(&mut self, message: &[u8]) -> Result<(), TransactionError> {
+    fn process_retry(&mut self, message: &[u8]) {
         let new_transaction = TransactionRetry::new_transaction(message);
         let repr = new_transaction.representation(false);
 
-        let mut ended = self.ended.0.lock()
+        let mut ended = self
+            .ended
+            .0
+            .lock()
             .expect("[Transaction Receiver] Lock de finilizacion envenenado");
-        if !*ended { 
-            println!("[Transaction Receiver] Reintento {} DENEGADO: otra transaccion en ejecucion", repr);
-            return Ok(()); 
+        if !*ended {
+            println!(
+                "[Transaction Receiver] Reintento {} DENEGADO: otra transaccion en ejecucion",
+                repr
+            );
+            return;
         }
-        
+
         let mut opt_transaction = self
             .curr_transaction
             .0
             .lock()
             .expect("[Transaction Manager] Lock de transaccion envenenado");
-        
+
         if let Some(transaction) = opt_transaction.as_ref() {
             let curr_id = transaction.get_id();
             let new_id = new_transaction.get_id();
             if curr_id >= new_id {
-                println!("[Transaction Receiver] Reintento {} DENEGADO: ID bajo", repr);
-                return Ok(()); 
+                println!(
+                    "[Transaction Receiver] Reintento {} DENEGADO: ID bajo",
+                    repr
+                );
+                return;
             }
         }
 
@@ -132,7 +147,6 @@ impl TransactionReceiver {
 
         *ended = false;
         self.ended.1.notify_all();
-        Ok(())
     }
 
     /// # Errors
@@ -157,12 +171,14 @@ impl TransactionReceiver {
             },
         };
         let info_type = message[0];
+        let mut res: Result<(), TransactionError> = Ok(());
         match info_type {
-            RESPONSE_BYTE => self.process_response(message, addr),
-            LOG_BYTE => self.process_log(message),
+            RESPONSE_BYTE => res = self.process_response(&message, &addr),
+            LOG_BYTE => self.process_log(&message),
             RETRY_BYTE => self.process_retry(&message),
             _ => panic!("Byte de informacion desconocido"),
-        }
+        };
+        res
     }
 }
 
@@ -171,12 +187,13 @@ mod tests {
     use super::*;
 
     use crate::{
-        alglobo::{transaction_state::TransactionState, transactionable::{MockTransactionable}},
+        alglobo::{transaction_state::TransactionState, transactionable::MockTransactionable},
         services::service_name::ServiceName,
         sockets::udp_socket_receiver::MockUdpSocketReceiver,
         transaction_messages::{
             transaction_code::TransactionCode, transaction_info::TransactionInfo,
-            transaction_log::TransactionLog, transaction_response::TransactionResponse, transaction_retry::TransactionRetry,
+            transaction_log::TransactionLog, transaction_response::TransactionResponse,
+            transaction_retry::TransactionRetry,
         },
     };
 
@@ -221,7 +238,7 @@ mod tests {
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         assert!(receiver.recv().is_ok());
@@ -263,7 +280,7 @@ mod tests {
             Box::new(mock_socket),
             &services_addrs,
             Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new())),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         assert!(receiver.recv().is_ok());
@@ -299,7 +316,7 @@ mod tests {
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction.clone(),
-            Arc::new((Mutex::new(false), Condvar::new()))
+            Arc::new((Mutex::new(false), Condvar::new())),
         );
 
         assert!(receiver.recv().is_ok());
@@ -337,14 +354,14 @@ mod tests {
         let services_info_vec = [
             (ServiceName::Airline.string_name(), 100.0),
             (ServiceName::Hotel.string_name(), 200.0),
-            (ServiceName::Bank.string_name(), 300.0)
+            (ServiceName::Bank.string_name(), 300.0),
         ];
 
         let mut message = TransactionRetry::build(
-            transaction_id, 
-            services_info_vec[0].1, 
-            services_info_vec[1].1, 
-            services_info_vec[2].1
+            transaction_id,
+            services_info_vec[0].1,
+            services_info_vec[1].1,
+            services_info_vec[2].1,
         );
         TransactionInfo::add_padding(&mut message);
 
@@ -359,15 +376,15 @@ mod tests {
 
         let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
         let curr_transaction_clone = curr_transaction.clone();
-        
+
         let ended = Arc::new((Mutex::new(true), Condvar::new()));
-        let ended_clone =  ended.clone();
-        
+        let ended_clone = ended.clone();
+
         let mut receiver = TransactionReceiver::new(
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction_clone,
-            ended_clone
+            ended_clone,
         );
 
         assert!(receiver.recv().is_ok());
@@ -391,14 +408,14 @@ mod tests {
         let services_info_vec = [
             (ServiceName::Airline.string_name(), 100.0),
             (ServiceName::Hotel.string_name(), 200.0),
-            (ServiceName::Bank.string_name(), 300.0)
+            (ServiceName::Bank.string_name(), 300.0),
         ];
 
         let mut message = TransactionRetry::build(
-            transaction_id, 
-            services_info_vec[0].1, 
-            services_info_vec[1].1, 
-            services_info_vec[2].1
+            transaction_id,
+            services_info_vec[0].1,
+            services_info_vec[1].1,
+            services_info_vec[2].1,
         );
         TransactionInfo::add_padding(&mut message);
 
@@ -413,15 +430,15 @@ mod tests {
 
         let curr_transaction = Arc::new((Mutex::new(None), Condvar::new()));
         let curr_transaction_clone = curr_transaction.clone();
-        
+
         let ended = Arc::new((Mutex::new(false), Condvar::new()));
-        let ended_clone =  ended.clone();
-        
+        let ended_clone = ended.clone();
+
         let mut receiver = TransactionReceiver::new(
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction_clone,
-            ended_clone
+            ended_clone,
         );
 
         assert!(receiver.recv().is_ok());
@@ -442,14 +459,14 @@ mod tests {
         let services_info_vec = [
             (ServiceName::Airline.string_name(), 100.0),
             (ServiceName::Hotel.string_name(), 200.0),
-            (ServiceName::Bank.string_name(), 300.0)
+            (ServiceName::Bank.string_name(), 300.0),
         ];
 
         let mut message = TransactionRetry::build(
-            transaction_id, 
-            services_info_vec[0].1, 
-            services_info_vec[1].1, 
-            services_info_vec[2].1
+            transaction_id,
+            services_info_vec[0].1,
+            services_info_vec[1].1,
+            services_info_vec[2].1,
         );
         TransactionInfo::add_padding(&mut message);
 
@@ -469,17 +486,18 @@ mod tests {
             .times(2)
             .returning(move || curr_id);
 
-        let curr_transaction:CurrentTransaction = Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new()));
+        let curr_transaction: CurrentTransaction =
+            Arc::new((Mutex::new(Some(Box::new(mock_transaction))), Condvar::new()));
         let curr_transaction_clone = curr_transaction.clone();
-        
+
         let ended = Arc::new((Mutex::new(true), Condvar::new()));
-        let ended_clone =  ended.clone();
-        
+        let ended_clone = ended.clone();
+
         let mut receiver = TransactionReceiver::new(
             Box::new(mock_socket),
             &services_addrs,
             curr_transaction_clone,
-            ended_clone
+            ended_clone,
         );
 
         assert!(receiver.recv().is_ok());

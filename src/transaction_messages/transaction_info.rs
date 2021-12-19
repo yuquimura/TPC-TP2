@@ -19,14 +19,18 @@ impl TransactionInfo {
 #[cfg(test)]
 mod tests {
     use crate::transaction_messages::{
-        transaction_log::TransactionLog, transaction_response::TransactionResponse, transaction_retry::TransactionRetry,
+        transaction_log::TransactionLog, transaction_response::TransactionResponse,
+        transaction_retry::TransactionRetry,
     };
 
     use super::*;
     use std::cmp::max;
     #[test]
     fn size_should_return_the_max_size_of_all_transaction_info_messages() {
-        let size = max(max(TransactionLog::size(), TransactionResponse::size()),TransactionRetry::size());
+        let size = max(
+            max(TransactionLog::size(), TransactionResponse::size()),
+            TransactionRetry::size(),
+        );
         assert_eq!(TransactionInfo::size(), size);
     }
 
