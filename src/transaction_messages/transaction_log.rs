@@ -62,14 +62,17 @@ impl TransactionLog {
         let id = u64::from_be_bytes(id_bytes);
         begin += size_of::<u64>();
 
-        let services_info = HashMap::from([
+        let services_info_vec = [
             (ServiceName::Airline.string_name(),0.0),
             (ServiceName::Hotel.string_name(),0.0),
             (ServiceName::Bank.string_name(),0.0),
-        ]);
-        let mut transaction = Transaction::new(id, services_info.clone());
+        ];
+        let mut transaction = Transaction::new(
+            id, 
+            HashMap::from(services_info_vec.clone())
+        );
 
-        for (name, _) in services_info.iter() {
+        for (name, _) in services_info_vec.iter() {
             let state = TransactionState::from_byte(message[begin]);
             begin += 1;
             let fee_bytes: [u8; size_of::<u64>()] = message[begin..begin+size_of::<u64>()]

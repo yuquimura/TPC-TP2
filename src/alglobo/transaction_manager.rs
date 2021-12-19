@@ -4,7 +4,7 @@ use std::sync::{MutexGuard, Condvar, Mutex, Arc, RwLock};
 use std::thread::sleep;
 use std::{collections::HashMap, time::Duration};
 
-use crate::candidates::constants::{DEFAULT_IP, SLEEP, END_TIMEOUT};
+use crate::candidates::constants::{DEFAULT_IP, SLEEP_MANAGER, END_TIMEOUT};
 use crate::file_reader::file_iterator::FileIterator;
 use crate::{
     sockets::udp_socket_sender::UdpSocketSender,
@@ -19,7 +19,7 @@ use super::{
 };
 
 pub struct TransactionManager {
-    pub id: u64,
+    my_port: u64,
     udp_sender: Box<dyn UdpSocketSender + Send>,
     curr_transaction: CurrentTransaction,
     ended: Arc<(Mutex<bool>, Condvar)>,
@@ -31,7 +31,7 @@ pub struct TransactionManager {
 
 impl TransactionManager {
     pub fn new(
-        id: u64,
+        my_port: u64,
         udp_sender: Box<dyn UdpSocketSender + Send>,
         curr_transaction: CurrentTransaction,
         ended: Arc<(Mutex<bool>, Condvar)>,
@@ -62,7 +62,7 @@ impl TransactionManager {
         }
         
         TransactionManager {
-            id,
+            my_port,
             udp_sender,
             curr_transaction,
             ended,
@@ -117,7 +117,7 @@ impl TransactionManager {
         let _ = self.wait_update(|opt_transaction| {
             opt_transaction
                 .as_ref()
-                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
+                .expect("[Transaction Manager] La transaccion actual deberia existir")
                 .is_any_waiting()
         });
         self.send_transaction_logs();
@@ -129,7 +129,6 @@ impl TransactionManager {
     }
 
     pub fn abort(&mut self) -> bool {
-        println!("abort");
         let transaction_id;
         let all_services;
         {
@@ -144,7 +143,7 @@ impl TransactionManager {
         let _ = self.wait_update(|opt_transaction| {
             !opt_transaction
                 .as_ref()
-                .expect("[Transaction Manager] La transacci\u{f3}n actual deberia existir")
+                .expect("[Transaction Manager] La transaccion actual deberia existir")
                 .is_aborted()
         });
         self.send_transaction_logs();
@@ -236,7 +235,7 @@ impl TransactionManager {
             transaction_log = transaction.log();
             transaction_id = transaction.get_id();
         }
-        let my_addr = DEFAULT_IP.to_string() + self.id.to_string().as_str();
+        let my_addr = DEFAULT_IP.to_string() + self.my_port.to_string().as_str();
         for addr in self.replicas_addrs.clone() {
             if addr == my_addr {
                 continue;
@@ -302,7 +301,7 @@ impl TransactionManager {
             while !reader.ended() {
                 if let Some(transaction) = reader.next() {
                     if transaction.get_id() > start_line {
-                        sleep(Duration::from_secs(SLEEP));
+                        sleep(SLEEP_MANAGER.clone());
                         self.process(Some(transaction));
                     }
                 }
