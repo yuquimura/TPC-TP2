@@ -185,15 +185,16 @@ impl TransactionManager {
         &self,
         condition: fn(&mut Option<Box<dyn Transactionable + Send>>) -> bool,
     ) -> Result<(), TransactionError> {
+        let err_msg = "[Transaction Manager] Lock de transaccion envenenado";
         let res = self
             .curr_transaction
             .1
             .wait_timeout_while(
-                self.curr_transaction.0.lock().unwrap(),
+                self.curr_transaction.0.lock().expect(err_msg),
                 self.timeout,
                 condition,
             )
-            .expect("[Transaction Manager] Lock de transaccion envenenado");
+            .expect(err_msg);
         if res.1.timed_out() {
             return Err(TransactionError::Timeout);
         }

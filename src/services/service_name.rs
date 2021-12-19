@@ -5,7 +5,6 @@ pub enum ServiceName {
     Bank,
 }
 
-#[allow(dead_code)]
 impl ServiceName {
     #[must_use]
     pub fn byte_code(&self) -> u8 {

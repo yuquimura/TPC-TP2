@@ -1,8 +1,5 @@
 use std::fmt;
 
-#[allow(dead_code)]
-type Result<T> = std::result::Result<T, SocketError>;
-
 #[derive(Debug, PartialEq)]
 pub enum SocketError {
     CloneFailed,

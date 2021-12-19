@@ -7,7 +7,6 @@ use crate::{
 
 use super::{transaction_state::TransactionState, transactionable::Transactionable};
 
-#[allow(dead_code)]
 pub struct Transaction {
     id: u64,
     services: HashMap<String, (TransactionState, f64)>,

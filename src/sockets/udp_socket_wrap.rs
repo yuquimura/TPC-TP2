@@ -6,7 +6,6 @@ use super::{
     udp_socket_sender::UdpSocketSender,
 };
 
-#[allow(dead_code)]
 pub struct UdpSocketWrap {
     socket: UdpSocket,
 }
