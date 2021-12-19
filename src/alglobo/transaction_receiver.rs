@@ -53,11 +53,8 @@ impl TransactionReceiver {
         response: Vec<u8>,
         addr: String,
     ) -> Result<(), TransactionError> {
-        let transaction_code = TransactionResponse::transaction_code(response[1]);
-        let id_bytes: [u8; size_of::<u64>()] = response[2..2 + size_of::<u64>()]
-            .try_into()
-            .expect("[Transaction Receiver] Los ids deberian ocupar 8 bytes");
-        let transaction_id = u64::from_be_bytes(id_bytes);
+        let (transaction_code, transaction_id) = 
+            TransactionResponse::parse(&response); 
         let service_name = self
             .services_addrs
             .get(&addr)

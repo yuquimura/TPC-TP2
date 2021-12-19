@@ -1,3 +1,5 @@
+use std::{mem::size_of, convert::TryInto};
+
 use super::{transaction_code::TransactionCode, types::RESPONSE_BYTE};
 
 const ACCEPT_BYTE: u8 = b'o';
@@ -46,6 +48,15 @@ impl TransactionResponse {
             TransactionCode::Commit => COMMIT_BYTE,
             TransactionCode::Prepare => panic!("{}", err_msg),
         }
+    }
+
+    pub fn parse(message: &[u8]) -> (TransactionCode, u64) {
+        let code = TransactionResponse::transaction_code(message[1]);
+        let id_bytes: [u8; size_of::<u64>()] = message[2..2 + size_of::<u64>()]
+            .try_into()
+            .expect("[Transaction Response] Los ids deberian ocupar 8 bytes");
+        let id = u64::from_be_bytes(id_bytes);
+        (code, id)
     }
 }
 
