@@ -73,7 +73,7 @@ impl Candidate {
                         self.im_the_leader = self.start_election(&his_address);
                         if self.im_the_leader {
                             //soy el lider
-                            self.communicate_new_leader(his_address)
+                            self.communicate_new_leader(his_address);
                         }
                     }
                 }
@@ -112,7 +112,9 @@ impl Candidate {
             self.im_the_leader = self.start_election(&self.leader_address.to_string());
             if self.im_the_leader {
                 //soy el lider
-                self.communicate_new_leader(self.leader_address.parse().unwrap());
+                if let Ok(parsed) = self.leader_address.parse(){
+                    self.communicate_new_leader(parsed);
+                }                
             } else {
                 loop {
                     self.udp_receiver
@@ -131,7 +133,7 @@ impl Candidate {
 
     fn start_election(&mut self, his_address: &str) -> bool {
         let mut im_the_leader = true;
-        for port in self.possible_ports.iter() {
+        for port in &self.possible_ports {
             if port.parse::<i32>().unwrap() < self.my_port.parse::<i32>().unwrap() {
                 let message = ElectionMessage::build(ElectionCode::Election);
                 let his_address_vect: Vec<&str> = his_address.split(':').collect();
@@ -151,7 +153,7 @@ impl Candidate {
     }
 
     fn communicate_new_leader(&mut self, his_address: String) {
-        for port in self.possible_ports.iter() {
+        for port in &self.possible_ports {
             let message = ElectionMessage::build(ElectionCode::Leader);
             let his_adr_vect: Vec<&str> = his_address.split(':').collect();
             let adr_to_send = his_adr_vect[0].to_string() + port;
@@ -161,9 +163,9 @@ impl Candidate {
     }
 
     pub fn start_candidate(&mut self) {
-        let mut file_iter = FileIterator::new("data/data.csv").unwrap();
+        let mut file_iter = FileIterator::new("data/data.csv").expect("fallo la lectura del archivo de datos.csv");
         let first_transaction = file_iter.next();
-        let true_first_transaction = first_transaction.unwrap();
+        let true_first_transaction = first_transaction.expect("hubo un problema iterando el archivo de data");
         let first_trans_cond: CurrentTransaction = Arc::new((
             Mutex::new(Some(Box::new(true_first_transaction))),
             Condvar::new(),

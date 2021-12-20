@@ -87,7 +87,7 @@ impl TransactionReceiver {
                 transaction.commit(service_name.to_string(), None);
             }
             TransactionCode::Prepare => {
-                println!("Codigo de transaccion no esperado: {}", transaction_code)
+                println!("Codigo de transaccion no esperado: {}", transaction_code);
             }
         }
         self.curr_transaction.1.notify_all();
