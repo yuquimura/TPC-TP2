@@ -45,6 +45,7 @@ impl CommonClient for Bank {
             .expect("[Client] Los ids deberian ocupar 8 bytes");
         let transaction_id = u64::from_be_bytes(id_bytes);
         if code == TransactionRequest::map_transaction_code(TransactionCode::Prepare) {
+            println!("Se ha recibido una operacion de PREPARE");
             if let Some(_response) = self.old_responses.get(&transaction_id) {
                 if let Some(_value) = self.old_responses.get(&transaction_id) {
                     let mut response =
@@ -61,6 +62,7 @@ impl CommonClient for Bank {
             let mut rng = rand::thread_rng();
             let n: u32 = rng.gen_range(0..10);
             if n < PERCENTAGE_ERROR {
+                println!("Hubo un error aleatorio al procesar la operacion de PREPARE");
                 let mut response =
                     TransactionResponse::build(TransactionCode::Abort, transaction_id);
                 TransactionInfo::add_padding(&mut response);
@@ -70,9 +72,11 @@ impl CommonClient for Bank {
             }
             let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
             TransactionInfo::add_padding(&mut response);
+            println!("Se ha respondido una operacion de PREPARE");
             let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
             self.old_responses.insert(transaction_id, true);
         } else if code == TransactionRequest::map_transaction_code(TransactionCode::Abort) {
+            println!("Se ha recibido una operacion de ABORT");
             let mut response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
@@ -80,8 +84,10 @@ impl CommonClient for Bank {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum -= fee_value;
+            println!("Se ha respondido una operacion de ABORT");
             let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
         } else {
+            println!("Se ha recibido una operacion de COMMIT");
             let mut response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
             TransactionInfo::add_padding(&mut response);
             let fee: [u8; size_of::<f64>()] = vector[size_of::<u64>() + 1..]
@@ -89,6 +95,7 @@ impl CommonClient for Bank {
                 .expect("[Client] Los fee deberian ocupar size_of::<f64> bytes");
             let fee_value = f64::from_be_bytes(fee);
             self.fee_sum += fee_value;
+            println!("Se ha respondido una operacion de COMMIT");
             let _drop = self.socket_sender.send_to(&response, &addr_to_answer);
         }
     }
