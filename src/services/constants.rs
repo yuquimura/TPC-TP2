@@ -1,1 +1,1 @@
-pub static PERCENTAGE_ERROR: u32 = 2;
+pub static PERCENTAGE_ERROR: u32 = 1;

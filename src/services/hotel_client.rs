@@ -167,13 +167,13 @@ mod tests {
 
     #[test]
     #[timeout(3000)]
-    fn it_should_return_accept_when_receives_abort() {
+    fn it_should_return_abort_when_receives_abort() {
         let hotel_addr = "127.0.0.1:49157";
         let transaction_id = 0;
         let hotel_fee = 100.0;
         let first_msg =
             TransactionRequest::build(TransactionCode::Abort, transaction_id, hotel_fee);
-        let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        let mut response = TransactionResponse::build(TransactionCode::Abort, transaction_id);
         TransactionInfo::add_padding(&mut response);
         let first_msg_len = first_msg.len();
 
@@ -202,13 +202,13 @@ mod tests {
 
     #[test]
     #[timeout(3000)]
-    fn it_should_return_accept_when_receives_commit() {
+    fn it_should_return_commit_when_receives_commit() {
         let hotel_addr = "127.0.0.1:49157";
         let transaction_id = 0;
         let hotel_fee = 100.0;
         let first_msg =
             TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee);
-        let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
+        let mut response = TransactionResponse::build(TransactionCode::Commit, transaction_id);
         TransactionInfo::add_padding(&mut response);
         let first_msg_len = first_msg.len();
 
@@ -233,41 +233,5 @@ mod tests {
         );
 
         let _drop = hotel.process_one_transaction();
-    }
-
-    #[test]
-    #[timeout(3000)]
-    fn it_should_change_fee_when_receives_commit() {
-        let hotel_addr = "127.0.0.1:49157";
-        let transaction_id = 0;
-        let hotel_fee = 100.0;
-        let first_msg =
-            TransactionRequest::build(TransactionCode::Commit, transaction_id, hotel_fee);
-        let mut response = TransactionResponse::build(TransactionCode::Accept, transaction_id);
-        TransactionInfo::add_padding(&mut response);
-        let first_msg_len = first_msg.len();
-
-        let mut mock_socket_sender = MockUdpSocketSender::new();
-        mock_socket_sender
-            .expect_send_to()
-            .withf(move |buff, addr| buff.to_vec() == response && addr == hotel_addr)
-            .times(1)
-            .returning(|_, _| Ok(()));
-
-        let mut mock_socket_receiver = MockUdpSocketReceiver::new();
-        mock_socket_receiver
-            .expect_recv()
-            .withf(move |n| n == &first_msg_len)
-            .times(1)
-            .returning(move |_| Ok((first_msg.clone(), hotel_addr.to_string())));
-
-        let mut hotel = Hotel::new(
-            Box::new(mock_socket_receiver),
-            Box::new(mock_socket_sender),
-            hotel_addr.to_string(),
-        );
-
-        let _drop = hotel.process_one_transaction();
-        assert_eq!(hotel.fee_sum, 100.0)
     }
 }
