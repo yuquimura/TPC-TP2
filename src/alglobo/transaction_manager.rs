@@ -31,6 +31,7 @@ pub struct TransactionManager {
 
 impl TransactionManager {
     #[must_use]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         my_port: u64,
         udp_sender: Box<dyn UdpSocketSender + Send>,
@@ -276,6 +277,7 @@ impl TransactionManager {
             .expect("[Transaction Manager] Lock de transaccion envenenado")
     }
 
+    #[allow(clippy::mutex_atomic)]
     fn wait_end_while(&mut self, dur: Duration) -> Result<(), TransactionError> {
         let lock_err_msg = "[Transaction Manager] Lock de espera de finalizacion envenenado";
         {

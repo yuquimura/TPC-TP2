@@ -17,7 +17,10 @@ Levantar un nodo candidato nuevo
 ```
 cargo run -- c
 ```
-
+Reintentar una transaccion
+```
+cargo run --bin retry -- 28 200 150 1
+```
 
 ## Formatear código
 ```

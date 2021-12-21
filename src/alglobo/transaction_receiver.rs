@@ -107,6 +107,7 @@ impl TransactionReceiver {
         self.curr_transaction.1.notify_all();
     }
 
+    #[allow(clippy::mutex_atomic)]
     fn process_retry(&mut self, message: &[u8]) {
         let new_transaction = TransactionRetry::new_transaction(message);
         let repr = new_transaction.representation(false);

@@ -112,9 +112,9 @@ impl Candidate {
             self.im_the_leader = self.start_election(&self.leader_address.to_string());
             if self.im_the_leader {
                 //soy el lider
-                if let Ok(parsed) = self.leader_address.parse(){
+                if let Ok(parsed) = self.leader_address.parse() {
                     self.communicate_new_leader(parsed);
-                }                
+                }
             } else {
                 loop {
                     self.udp_receiver
@@ -162,10 +162,13 @@ impl Candidate {
         self.leader_port = self.my_port.clone();
     }
 
+    #[allow(clippy::mutex_atomic)]
     pub fn start_candidate(&mut self) {
-        let mut file_iter = FileIterator::new("data/data.csv").expect("fallo la lectura del archivo de datos.csv");
+        let mut file_iter =
+            FileIterator::new("data/data.csv").expect("fallo la lectura del archivo de datos.csv");
         let first_transaction = file_iter.next();
-        let true_first_transaction = first_transaction.expect("hubo un problema iterando el archivo de data");
+        let true_first_transaction =
+            first_transaction.expect("hubo un problema iterando el archivo de data");
         let first_trans_cond: CurrentTransaction = Arc::new((
             Mutex::new(Some(Box::new(true_first_transaction))),
             Condvar::new(),
