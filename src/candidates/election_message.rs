@@ -3,6 +3,7 @@ use super::election_code::ElectionCode;
 const ALIVE_BYTE: u8 = b'v';
 const ELECTION_BYTE: u8 = b'e';
 const LEADER_BYTE: u8 = b'l';
+const FIRST_BYTE: u8 = b'f';
 
 pub struct ElectionMessage;
 
@@ -42,6 +43,7 @@ impl ElectionMessage {
             ElectionCode::Alive => ALIVE_BYTE,
             ElectionCode::Election => ELECTION_BYTE,
             ElectionCode::Leader => LEADER_BYTE,
+            ElectionCode::First=> FIRST_BYTE
         }
     }
 }

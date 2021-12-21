@@ -53,8 +53,10 @@ impl Candidate {
 
     pub fn send_to(&mut self) {
         if self.leader_port == EMPTY {
-            println!("No conozco al lider");
-            self.im_the_leader = self.start_election(&DEFAULT_IP.to_string());
+            self.start_first_election(&DEFAULT_IP.to_string());
+            if self.leader_port == EMPTY{
+                self.im_the_leader = self.start_election(&DEFAULT_IP.to_string());
+            }
             return;
         }
         let message = ElectionMessage::build(ElectionCode::Alive);
@@ -124,6 +126,32 @@ impl Candidate {
                 if let Ok(parsed) = self.leader_address.parse() {
                     self.communicate_new_leader(parsed);
                 }
+            }
+        }
+    }
+
+    fn start_first_election(&mut self, his_address: &str){
+        let mut im_the_leader = true;
+        for port in &self.possible_ports {
+            if *port == self.my_port{
+                continue;
+            }
+            println!("[Candidato]: le pregunto al puerto {}",port);
+            let message = ElectionMessage::build(ElectionCode::First);
+            let his_address_vect: Vec<&str> = his_address.split(':').collect();
+            let address_to_send = his_address_vect[0].to_string() + ":" + port;
+            let _drop = self
+                .udp_sender
+                .send_to(message.as_slice(), &address_to_send);
+            self.udp_receiver
+                .set_timeout(Some(Duration::from_millis(100)));
+            if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
+                im_the_leader = false;
+                let his_port_vect: Vec<&str> = response.1.split(':').collect();
+                self.leader_port = his_port_vect[1].to_string();
+                println!("[CANDIDATO] El puerto del lider es: {}",self.leader_port);
+                self.leader_address = response.1;
+                break;
             }
         }
     }

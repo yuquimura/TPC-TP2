@@ -5,6 +5,7 @@ pub enum ElectionCode {
     Alive,
     Election,
     Leader,
+    First
 }
 
 impl fmt::Display for ElectionCode {
@@ -13,6 +14,7 @@ impl fmt::Display for ElectionCode {
             ElectionCode::Alive => write!(f, "VIVO"),
             ElectionCode::Election => write!(f, "ELECCION"),
             ElectionCode::Leader => write!(f, "LIDER"),
+            ElectionCode::First => write!(f, "PRIMERA"),
         }
     }
 }

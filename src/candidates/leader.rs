@@ -41,6 +41,13 @@ impl Leader {
         let result = recv.recv(ElectionMessage::size());
         if let Ok(response) = result.as_ref() {
             match response.0[0] {
+                b'f' => {
+                    println!("[Lider] Informo que soy el lider");
+                    let his_address = response.1.clone();
+                    let message = ElectionMessage::build(ElectionCode::Leader);
+                    let _drop = send.send_to(message.as_slice(), &his_address);
+                }
+
                 b'v' => {
                     let message = ElectionMessage::build(ElectionCode::Alive);
                     let his_address = response.1.clone();
