@@ -101,6 +101,7 @@ impl CommonClient for Bank {
     }
 
     fn start_client(&mut self) {
+        println!("Se ha inicializado correctamente el servicio");
         loop {
             let _drop = self.process_one_transaction();
         }
@@ -111,6 +112,7 @@ impl CommonClient for Bank {
     /// It wont return error if the `socket_receiver.recv` doesnt return error
     fn process_one_transaction(&mut self) -> Result<i64, String> {
         let res = self.socket_receiver.recv(TransactionRequest::size());
+        println!("Se procede al procesamiento de una transaccion");
         let res_vec = res.unwrap();
         let res_vector = res_vec.0;
         let addr_to_answer = res_vec.1;

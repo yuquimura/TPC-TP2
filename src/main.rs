@@ -20,7 +20,7 @@ fn main() {
         let mut socket_data_recv = UdpSocketWrap::new(None);
         let mut socket_data_send = UdpSocketWrap::new(None);
         let mut port_candidate: i32 = 0;
-        let mut vec_addr: Vec<String> = vec!["49353".to_string()];
+        let mut vec_addr: Vec<String> = Vec::new();
         for port in VEC_PORT_INFO.clone() {
             vec_addr.push(port.to_string().clone());
         }
