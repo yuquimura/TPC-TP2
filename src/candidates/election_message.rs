@@ -43,7 +43,7 @@ impl ElectionMessage {
             ElectionCode::Alive => ALIVE_BYTE,
             ElectionCode::Election => ELECTION_BYTE,
             ElectionCode::Leader => LEADER_BYTE,
-            ElectionCode::First=> FIRST_BYTE
+            ElectionCode::First => FIRST_BYTE,
         }
     }
 }

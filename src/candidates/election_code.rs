@@ -5,7 +5,7 @@ pub enum ElectionCode {
     Alive,
     Election,
     Leader,
-    First
+    First,
 }
 
 impl fmt::Display for ElectionCode {
