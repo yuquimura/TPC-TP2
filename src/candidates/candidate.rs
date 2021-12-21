@@ -65,6 +65,7 @@ impl Candidate {
         if let Ok(value) = self.udp_receiver.recv(ElectionMessage::size()) {
             match value.0[0] {
                 b'v' => {
+                    println!("[Candidato]: El lider ha respondido que se encuentra vivo");
                     self.udp_receiver
                         .set_timeout(Some(Duration::from_millis(10000)));
                     if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
@@ -79,6 +80,7 @@ impl Candidate {
                 }
                 //contemplar que pasa cuando llega un mensaje de election y tengo que contestar OK, como se que no soy el lider?
                 b'e' => {
+                    println!("[Candidato]: He recibido un mensaje de eleccion.");
                     let his_address = value.1;
                     let _drop = self.udp_sender.send_to(message.as_slice(), &his_address);
                     self.im_the_leader = self.start_election(&his_address);
@@ -91,6 +93,7 @@ impl Candidate {
                                 .set_timeout(Some(Duration::from_millis(10000)));
                             if let Ok(response) = self.udp_receiver.recv(ElectionMessage::size()) {
                                 if response.0[0] == b'l' {
+                                    println!("[Candidato]: He recibido un mensaje del nuevo lider.");
                                     let his_port_vect: Vec<&str> = response.1.split(':').collect();
                                     self.leader_port = his_port_vect[1].to_string();
                                     self.leader_address = response.1;
@@ -100,6 +103,7 @@ impl Candidate {
                     }
                 }
                 b'l' => {
+                    println!("[Candidato]: He recibido un mensaje del nuevo lider.");
                     let his_port_vect: Vec<&str> = value.1.split(':').collect();
                     self.leader_port = his_port_vect[1].to_string();
                     self.leader_address = value.1;
@@ -132,6 +136,7 @@ impl Candidate {
     }
 
     fn start_election(&mut self, his_address: &str) -> bool {
+        println!("[Candidato]: Inicio de eleccion de nuevo lider");
         let mut im_the_leader = true;
         for port in &self.possible_ports {
             if port.parse::<i32>().unwrap() < self.my_port.parse::<i32>().unwrap() {
@@ -144,15 +149,17 @@ impl Candidate {
                 self.udp_receiver
                     .set_timeout(Some(Duration::from_millis(100)));
                 if let Ok(_response) = self.udp_receiver.recv(ElectionMessage::size()) {
-                    //loggear que me respondieron
+                    println!("[Candidato]: Otro nodo tomara el liderazgo");
                     im_the_leader = false;
                 }
             }
         }
+        println!("[Candidato]: Sere el proximo lider");
         im_the_leader
     }
 
     fn communicate_new_leader(&mut self, his_address: String) {
+        println!("[Candidato ->lider]: Comunicacion de nuevo lider");
         for port in &self.possible_ports {
             let message = ElectionMessage::build(ElectionCode::Leader);
             let his_adr_vect: Vec<&str> = his_address.split(':').collect();
